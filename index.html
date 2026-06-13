@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Heavoria - Taste Of Heaven</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Background Layer -->
+  <div class="app-background"></div>
+  <div class="app-overlay"></div>
+
+  <!-- Gold Frame Border -->
+  <div class="gold-frame"></div>
+
+  <!-- MAIN CONTAINER (SPA) -->
+  <div id="app-container">
+
+    <!-- 1. WELCOME SCREEN -->
+    <section id="welcome-screen" class="screen-view">
+      <div class="logo-container">
+        <div class="circular-logo">
+          <img src="assets/heavoria_logorevisi.jpeg" alt="Heavoria Logo" onerror="this.src='https://placehold.co/100x100/422/fd3?text=H'">
+        </div>
+      </div>
+      
+      <div class="welcome-header">
+        <h1 class="welcome-title">WELCOME TO</h1>
+        <h2 class="welcome-brand">HEAVORIA</h2>
+        <div class="welcome-divider">
+          <span class="diamond"></span>
+        </div>
+        <p class="welcome-subtitle">Taste Of Heaven</p>
+      </div>
+
+      <div class="welcome-actions">
+        <button id="btn-goto-login" class="btn btn-translucent">Login!</button>
+        <button id="btn-goto-register" class="btn btn-translucent">Sign In!</button>
+      </div>
+
+      <div class="welcome-footer">
+        <div class="footer-feature">
+          <div class="feature-icon">
+            <!-- Delivery Truck SVG -->
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="3" width="15" height="13"></rect>
+              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+              <circle cx="5.5" cy="18.5" r="2.5"></circle>
+              <circle cx="18.5" cy="18.5" r="2.5"></circle>
+            </svg>
+          </div>
+          <div class="feature-text">
+            <h3>FAST DELIVERY</h3>
+            <p>Fresh To Your Door</p>
+          </div>
+        </div>
+
+        <div class="footer-divider"></div>
+
+        <div class="footer-feature">
+          <div class="feature-icon">
+            <!-- Wheat/Leaf SVG -->
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 22C2 22 8 20 12 16C16 12 22 2 22 2C22 2 12 8 8 12C4 16 2 22 2 22Z"></path>
+              <path d="M12 16L14 19L17 17L15 14"></path>
+              <path d="M8 12L6 9L9 7L11 10"></path>
+            </svg>
+          </div>
+          <div class="feature-text">
+            <h3>PREMIUM INGREDIENTS</h3>
+            <p>Selected With Care</p>
+          </div>
+        </div>
+
+        <div class="footer-divider"></div>
+
+        <div class="footer-feature">
+          <div class="feature-icon">
+            <!-- Heart SVG -->
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+          </div>
+          <div class="feature-text">
+            <h3>Made With Love</h3>
+            <p>For Your Happiness</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. LOGIN SCREEN -->
+    <section id="login-screen" class="screen-view">
+      <div class="logo-container">
+        <div class="circular-logo">
+          <img src="assets/heavoria_logo.png" alt="Heavoria Logo" onerror="this.src='https://placehold.co/100x100/422/fd3?text=H'">
+        </div>
+      </div>
+
+      <div class="welcome-header login-header">
+        <h1 class="welcome-title">WELCOME TO</h1>
+        <h2 class="welcome-brand">HEAVORIA</h2>
+        <div class="welcome-divider">
+          <span class="diamond"></span>
+        </div>
+        <p class="welcome-subtitle">Taste Of Heaven</p>
+      </div>
+
+      <div class="auth-box">
+        <form id="form-login">
+          <div class="input-group">
+            <input type="text" id="login-username" placeholder="Username" required>
+          </div>
+          <div class="input-group password-group">
+            <input type="password" id="login-password" placeholder="Enter Password" required>
+            <span class="toggle-password" data-target="login-password">
+              <!-- Eye Close SVG -->
+              <svg class="eye-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </span>
+          </div>
+          
+          <div class="error-message" id="login-error">
+            Error! incorrect password or username.<br>Please enter the correct name and username.
+          </div>
+
+          <div class="auth-links" style="display: flex; justify-content: space-between; margin-top: 15px;">
+            <a href="#" class="auth-link" id="link-forget-pwd">Forget Password ?</a>
+            <a href="#" class="auth-link" id="link-goto-register-from-login">Sign In / Daftar</a>
+          </div>
+
+          <button type="submit" class="btn btn-translucent btn-auth">Login!</button>
+        </form>
+      </div>
+
+      <div class="back-navigation">
+        <button class="btn-back btn-back-welcome">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg> Kembali
+        </button>
+      </div>
+    </section>
+
+    <!-- 3. REGISTER (SIGN IN) SCREEN -->
+    <section id="register-screen" class="screen-view">
+      <div class="logo-container">
+        <div class="circular-logo">
+          <img src="assets/heavoria_logo.png" alt="Heavoria Logo" onerror="this.src='https://placehold.co/100x100/422/fd3?text=H'">
+        </div>
+      </div>
+
+      <div class="welcome-header login-header">
+        <h1 class="welcome-title">WELCOME TO</h1>
+        <h2 class="welcome-brand">HEAVORIA</h2>
+        <div class="welcome-divider">
+          <span class="diamond"></span>
+        </div>
+        <p class="welcome-subtitle">Taste Of Heaven</p>
+      </div>
+
+      <div class="auth-box register-box">
+        <form id="form-register">
+          <div class="input-group">
+            <input type="text" id="reg-username" placeholder="Username" required>
+          </div>
+          <div class="input-group">
+            <input type="tel" id="reg-phone" placeholder="Phone Number" required>
+          </div>
+          <div class="input-group password-group">
+            <input type="password" id="reg-password" placeholder="Enter Password" required>
+            <span class="toggle-password" data-target="reg-password">
+              <svg class="eye-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </span>
+          </div>
+          <div class="input-group password-group">
+            <input type="password" id="reg-confirm-password" placeholder="Confirm Password" required>
+            <span class="toggle-password" data-target="reg-confirm-password">
+              <svg class="eye-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </span>
+          </div>
+          
+          <div class="error-message" id="reg-error">
+            Error! The passwords do not match
+          </div>
+
+          <button type="submit" class="btn btn-translucent btn-auth">Sign In!</button>
+        </form>
+        <div class="auth-links" style="display: flex; justify-content: center; margin-top: 15px;">
+          <a href="#" class="auth-link" id="link-goto-login-from-reg">Sudah punya akun? Login!</a>
+        </div>
+      </div>
+
+      <div class="back-navigation">
+        <button class="btn-back btn-back-welcome">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg> Kembali
+        </button>
+      </div>
+    </section>
+
+    <!-- 4. CUSTOMER DASHBOARD -->
+    <section id="customer-dashboard" class="screen-view dashboard-view active">
+      <!-- NEW MOCKUP HEADER -->
+      <header class="dashboard-header-new">
+        <!-- Home Button -->
+        <button id="btn-header-home" class="header-btn-new btn-icon-only-new" title="Home">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+        </button>
+
+        <!-- Search Box -->
+        <div class="header-search-box-new">
+          <input type="text" id="header-search-input" placeholder="Search">
+          <svg class="search-icon-new" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="header-nav-new">
+          <button class="header-tab-new active" data-tab="catalog">Our Product</button>
+          <button class="header-tab-new" data-tab="testimony">Testimoni</button>
+          <button class="header-tab-new" data-tab="contact">Contact Us</button>
+          <button class="header-tab-new" data-tab="about">About Us</button>
+          <button class="header-tab-new" data-tab="order-history">Your Order</button>
+        </nav>
+
+        <!-- Cart Button -->
+        <button id="btn-cart-toggle" class="header-btn-new cart-btn-new">
+          <span>Cart</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+          <span id="cart-badge-count" class="cart-badge-new">0</span>
+        </button>
+
+        <!-- Profile / Logout Button -->
+        <button id="btn-header-profile" class="header-btn-new btn-logout btn-icon-only-new" title="Profile/Logout">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          <span id="customer-name" class="header-username-display" style="display:none;">Guest</span>
+        </button>
+      </header>
+
+      <main class="dashboard-body-new">
+        <!-- CATALOG TAB -->
+        <div id="tab-catalog" class="tab-pane active">
+          <!-- 1. Lobby Categories Screen (Default View) -->
+          <div id="catalog-lobby" class="catalog-lobby-view active">
+            <!-- Category Banner 1: Japanese Menu -->
+            <div class="category-banner-card" data-category="sushi" style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('assets/heavoria_bg.png');">
+              <div class="category-banner-content">
+                <p class="category-banner-sub">WE HAVE</p>
+                <h2 class="category-banner-title">JAPANESE MENU</h2>
+              </div>
+            </div>
+
+            <!-- Category Banner 2: Towel Cakes -->
+            <div class="category-banner-card" data-category="cake" style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('assets/heavoria_cake.png');">
+              <div class="category-banner-content">
+                <p class="category-banner-sub">ENJOY OUR</p>
+                <h2 class="category-banner-title">TOWEL CAKES</h2>
+              </div>
+            </div>
+
+            <!-- Category Banner 3: Elixir Drink -->
+            <div class="category-banner-card" data-category="drink" style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('assets/heavoria_drink.png');">
+              <div class="category-banner-content">
+                <p class="category-banner-sub">REFRESHING & SWEET</p>
+                <h2 class="category-banner-title">ELIXIR DRINK</h2>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Category Products Grid Screen -->
+          <div id="catalog-products" class="catalog-products-view">
+            <div id="category-title-header" class="category-title-header-new">❖ JAPANESE MENU ❖</div>
+            <div class="menu-grid" id="menu-items-container">
+              <!-- Dinamis via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TESTIMONY TAB -->
+        <div id="tab-testimony" class="tab-pane">
+          <div class="section-header">
+            <h2>Testimoni Pelanggan</h2>
+            <p>Apa kata mereka tentang cita rasa hidangan mewah Heavoria.</p>
+          </div>
+          <div class="testimony-grid">
+            <div class="testimony-card glass-card">
+              <div class="rating-stars">★★★★★</div>
+              <p class="testimony-text">"Sushi salmon nigirinya luar biasa segar! Tekstur nasinya pas sekali. Sangat terasa kualitas bahan premiumnya."</p>
+              <h4 class="testimony-author">- Rian Dimas</h4>
+            </div>
+            <div class="testimony-card glass-card">
+              <div class="rating-stars">★★★★★</div>
+              <p class="testimony-text">"Towel cake mangganya sangat lembut di mulut, manisnya seimbang dan mangganya segar sekali. Sangat direkomendasikan!"</p>
+              <h4 class="testimony-author">- Clarissa A.</h4>
+            </div>
+            <div class="testimony-card glass-card">
+              <div class="rating-stars">★★★★★</div>
+              <p class="testimony-text">"Penyajiannya sangat mewah dengan hiasan emas. Atmosfer dan makanannya benar-benar cita rasa surga."</p>
+              <h4 class="testimony-author">- H. Gunawan</h4>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTACT US TAB -->
+        <div id="tab-contact" class="tab-pane">
+          <div class="section-header">
+            <h2>Hubungi Kami</h2>
+            <p>Kami siap melayani kebutuhan bersantap mewah Anda.</p>
+          </div>
+          <div class="contact-layout">
+            <div class="contact-info glass-card">
+              <h3>Restoran Heavoria</h3>
+              <p>📍 Jl. Golden Paradise No. 77, Jakarta</p>
+              <p>📞 +62 812-3456-7890</p>
+              <p>✉ info@heavoria.com</p>
+              <p>🕒 Jam Operasional: 10:00 - 22:00 WIB</p>
+            </div>
+            <div class="contact-form-pane glass-card">
+              <h3>Kirim Pesan</h3>
+              <form id="form-contact" onsubmit="event.preventDefault(); alert('Pesan Anda telah terkirim! Terima kasih.'); this.reset();">
+                <input type="text" placeholder="Nama Anda" required class="contact-input">
+                <input type="email" placeholder="Email Anda" required class="contact-input">
+                <textarea placeholder="Pesan Anda..." required class="contact-input" style="height:80px;"></textarea>
+                <button type="submit" class="btn btn-gold w-100">Kirim Pesan</button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+       <div id="tab-about" class="tab-pane">
+          <div class="section-header">
+            <h2>About us</h2>
+            <p>Welcome to Heavoria ! </p>
+          </div>
+          <div class="about-content glass-card">
+            <h3 style="text-align: center; color: var(--color-primary-gold); font-family: var(--font-serif); margin-bottom: 20px;">HEAVORIA - TASTE OF HEAVEN</h3>
+            
+            <p>Heavoria began as a school entrepreneurship project, driven by a passion for creating high-quality, premium culinary experiences. What started as a small, creative concept has blossomed into a professional venture dedicated to bringing you the finest selection of authentic Japanese delights and modern western-inspired desserts.</p>
+            
+            <p>Our journey is rooted in learning, innovation, and a relentless commitment to quality. Every roll of our premium Sushi and every delicate layer of our signature Towel Cakes are crafted with care, using only fresh, premium ingredients to ensure a luxurious taste in every single bite.</p>
+            
+            <p style="font-style: italic; text-align: center; margin-top: 15px;">Thank you for being a part of our story, and we hope to bring a little taste of heaven to your day.</p>
+            
+            <div class="welcome-divider" style="margin: 20px auto;">
+              <span class="diamond"></span>
+            </div>
+            <h3 style="text-align: center; color: var(--color-primary-gold); font-family: var(--font-serif);">Taste of Heaven</h3>
+          </div>
+        </div>
+
+        <!-- ORDER HISTORY TAB (Your Order) -->
+        <div id="tab-order-history" class="tab-pane">
+          <div class="section-header">
+            <h2>Riwayat & Status Pesanan</h2>
+            <p>Pantau pesanan aktif Anda atau lihat struk pembelian sebelumnya.</p>
+          </div>
+          <div class="orders-list" id="customer-orders-container">
+            <!-- Dinamis via JS -->
+          </div>
+        </div>
+      </main>
+    </section>
+
+    <!-- 5. ADMIN DASHBOARD -->
+    <section id="admin-dashboard" class="screen-view dashboard-view">
+      <header class="dashboard-header">
+        <div class="header-brand">
+          <div class="header-logo-circle logo-admin">A</div>
+          <div>
+            <h1 class="brand-text text-gold">HEAVORIA ADMIN</h1>
+            <p class="brand-tagline">Management Portal</p>
+          </div>
+        </div>
+
+        <nav class="admin-nav">
+          <button class="nav-item active" data-tab="admin-summary">Ringkasan</button>
+          <button class="nav-item" data-tab="admin-orders">Antrean Pesanan</button>
+          <button class="nav-item" data-tab="admin-menu">Kelola Menu</button>
+          <button class="nav-item" data-tab="admin-transactions">Riwayat Penjualan</button>
+        </nav>
+
+        <div class="header-actions">
+          <div class="user-info">
+            <span class="role-badge badge-admin">Administrator</span>
+            <span class="username-display">Admin Resto</span>
+          </div>
+          <button class="btn-logout btn-icon-only" title="Logout">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="dashboard-body">
+        <!-- ADMIN SUMMARY TAB -->
+        <div id="tab-admin-summary" class="tab-pane active">
+          <div class="admin-stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon icon-revenue">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="1" x2="12" y2="23"></line>
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+              </div>
+              <div class="stat-content">
+                <h3>Total Pendapatan</h3>
+                <p class="stat-number" id="stat-total-revenue">Rp 0</p>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon icon-orders">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+              </div>
+              <div class="stat-content">
+                <h3>Jumlah Pesanan</h3>
+                <p class="stat-number" id="stat-total-orders">0</p>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon icon-popular">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+              </div>
+              <div class="stat-content">
+                <h3>Menu Terlaris</h3>
+                <p class="stat-number" id="stat-popular-item">-</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-container-row">
+            <div class="summary-chart-card">
+              <h3>Performa Penjualan Kategori</h3>
+              <div class="custom-bar-chart" id="category-chart">
+                <!-- Bar chart dinamis digambar via CSS -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ADMIN ORDERS TAB -->
+        <div id="tab-admin-orders" class="tab-pane">
+          <div class="section-header flex-header">
+            <div>
+              <h2>Antrean Pesanan Aktif</h2>
+              <p>Kelola dan ubah status pesanan pelanggan secara real-time.</p>
+            </div>
+            <div class="filter-group">
+              <button class="status-filter-btn active" data-status-filter="all">Semua</button>
+              <button class="status-filter-btn" data-status-filter="Pending">Pending</button>
+              <button class="status-filter-btn" data-status-filter="Diproses">Diproses</button>
+            </div>
+          </div>
+          <div class="admin-orders-list" id="admin-orders-container">
+            <!-- Dinamis via JS -->
+          </div>
+        </div>
+
+        <!-- ADMIN MENU TAB -->
+        <div id="tab-admin-menu" class="tab-pane">
+          <div class="section-header flex-header">
+            <div>
+              <h2>Kelola Menu Restoran</h2>
+              <p>Tambah, edit, atau hapus makanan dari daftar menu katalog.</p>
+            </div>
+            <button id="btn-add-menu-modal" class="btn btn-gold">+ Tambah Menu</button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Gambar</th>
+                  <th>Nama Menu</th>
+                  <th>Kategori</th>
+                  <th>Harga</th>
+                  <th>Deskripsi</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="admin-menu-table-body">
+                <!-- Dinamis via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ADMIN TRANSACTIONS TAB -->
+        <div id="tab-admin-transactions" class="tab-pane">
+          <div class="section-header">
+            <h2>Riwayat Penjualan Lengkap</h2>
+            <p>Laporan transaksi pembayaran pelanggan yang telah diselesaikan.</p>
+          </div>
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>ID Transaksi</th>
+                  <th>Waktu</th>
+                  <th>Meja</th>
+                  <th>Pesanan</th>
+                  <th>Pembayaran</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody id="admin-transactions-table-body">
+                <!-- Dinamis via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </section>
+
+  </div>
+
+  <!-- ==================== MODAL LAYERS ==================== -->
+
+  <!-- 1. SIDE CART DRAWER (USER ONLY) -->
+  <div id="cart-drawer" class="drawer">
+    <div class="drawer-overlay" id="cart-drawer-overlay"></div>
+    <div class="drawer-content">
+      <div class="drawer-header">
+        <h2>Keranjang Belanja</h2>
+        <button class="btn-close-drawer" id="btn-close-cart">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="drawer-body">
+        <div class="input-meja-group">
+          <label for="cart-table-number">Nomor Meja:</label>
+          <input type="number" id="cart-table-number" min="1" max="50" placeholder="Contoh: 12" required>
+        </div>
+
+        <div class="cart-items-list" id="cart-items-container">
+          <!-- Dinamis via JS -->
+        </div>
+
+        <div class="cart-summary-card">
+          <div class="summary-row">
+            <span>Subtotal</span>
+            <span id="cart-subtotal">Rp 0</span>
+          </div>
+          <div class="summary-row">
+            <span>Pajak (10%)</span>
+            <span id="cart-tax">Rp 0</span>
+          </div>
+          <div class="summary-row">
+            <span>Service Charge (5%)</span>
+            <span id="cart-service">Rp 0</span>
+          </div>
+          <hr class="summary-divider">
+          <div class="summary-row total-row">
+            <span>Total Bayar</span>
+            <span id="cart-total" class="text-gold">Rp 0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="drawer-footer">
+        <button id="btn-checkout" class="btn btn-gold w-100">Checkout & Bayar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. DETAIL FOOD MODAL (USER ONLY) -->
+  <div id="food-detail-modal" class="modal">
+    <div class="modal-overlay modal-close-btn"></div>
+    <div class="modal-content glass-modal">
+      <button class="modal-close modal-close-btn">&times;</button>
+      <div class="modal-body food-detail-layout">
+        <div class="food-detail-image-box">
+          <img id="modal-food-img" src="" alt="Food Image">
+        </div>
+        <div class="food-detail-info-box">
+          <span id="modal-food-category" class="food-category-tag">Kategori</span>
+          <h2 id="modal-food-title">Nama Makanan</h2>
+          <p id="modal-food-desc" class="food-description">Deskripsi detail mengenai hidangan lezat Heavoria ini.</p>
+          <h3 id="modal-food-price" class="food-price text-gold">Rp 0</h3>
+
+          <!-- Options -->
+          <div class="food-options">
+            <label for="modal-food-notes">Catatan Tambahan:</label>
+            <textarea id="modal-food-notes" placeholder="Contoh: Kurang manis, tanpa saus, atau pedas level 3..."></textarea>
+          </div>
+
+          <div class="quantity-row">
+            <div class="qty-control">
+              <button class="qty-btn" id="btn-qty-minus">-</button>
+              <span id="modal-qty-display" class="qty-val">1</span>
+              <button class="qty-btn" id="btn-qty-plus">+</button>
+            </div>
+            <button id="btn-add-to-cart" class="btn btn-gold flex-grow">Tambahkan ke Keranjang</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. PAYMENT MODAL -->
+  <div id="payment-modal" class="modal">
+    <div class="modal-overlay" id="payment-modal-overlay"></div>
+    <div class="modal-content glass-modal small-modal">
+      <button class="modal-close" id="btn-close-payment">&times;</button>
+      <div class="modal-body text-center">
+        <h2>Pilih Metode Pembayaran</h2>
+        <p>Silakan pilih metode transaksi yang Anda inginkan</p>
+
+        <div class="payment-methods-grid">
+          <label class="payment-method-card active">
+            <input type="radio" name="payment-method" value="QRIS" checked>
+            <div class="method-box">
+              <div class="method-icon">QR</div>
+              <span>QRIS Digital</span>
+            </div>
+          </label>
+          <label class="payment-method-card">
+            <input type="radio" name="payment-method" value="Kartu">
+            <div class="method-box">
+              <div class="method-icon">💳</div>
+              <span>Debit / Kartu</span>
+            </div>
+          </label>
+          <label class="payment-method-card">
+            <input type="radio" name="payment-method" value="Tunai">
+            <div class="method-box">
+              <div class="method-icon">💵</div>
+              <span>Tunai / Kasir</span>
+            </div>
+          </label>
+        </div>
+
+        <!-- Dynamic Payment Details (QR Code Mockup) -->
+        <div id="payment-details-qris" class="payment-details-pane active">
+          <div class="qris-box">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Heavoria-Restaurant-Payment-Sim" alt="QRIS Code" class="qris-code">
+            <p class="text-sm">Scan QRIS di atas untuk melakukan simulasi pembayaran</p>
+          </div>
+        </div>
+
+        <div id="payment-details-card" class="payment-details-pane">
+          <div class="card-form-mock">
+            <input type="text" placeholder="Nomor Kartu (Simulasi)" class="w-100 card-input">
+            <input type="text" placeholder="Nama Pemegang Kartu" class="w-100 card-input">
+          </div>
+        </div>
+
+        <div id="payment-details-cash" class="payment-details-pane">
+          <p class="cash-notice">Silakan lakukan pembayaran tunai sebesar <strong id="cash-payment-amount" class="text-gold">Rp 0</strong> langsung ke kasir dengan menyebutkan Nomor Meja Anda.</p>
+        </div>
+
+        <button id="btn-process-payment" class="btn btn-gold w-100 mt-2">Bayar Sekarang</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. RECEIPT/STRUK DIGITAL MODAL -->
+  <div id="receipt-modal" class="modal">
+    <div class="modal-overlay" id="receipt-modal-overlay"></div>
+    <div class="modal-content glass-modal receipt-modal-box">
+      <div class="receipt-paper">
+        <div class="receipt-header">
+          <h2>HEAVORIA</h2>
+          <p>Taste Of Heaven</p>
+          <p class="receipt-small">Jl. Golden Paradise No. 77</p>
+          <hr class="dotted-divider">
+        </div>
+        <div class="receipt-info">
+          <p><strong>Order ID:</strong> <span id="rec-order-id">ORD-000</span></p>
+          <p><strong>Tanggal:</strong> <span id="rec-date">2026-06-06 12:00</span></p>
+          <p><strong>Meja:</strong> <span id="rec-table">0</span></p>
+          <p><strong>Metode:</strong> <span id="rec-method">QRIS</span></p>
+          <hr class="dotted-divider">
+        </div>
+        <div class="receipt-items" id="rec-items-container">
+          <!-- Dinamis -->
+        </div>
+        <hr class="dotted-divider">
+        <div class="receipt-totals">
+          <div class="rec-row">
+            <span>Subtotal</span>
+            <span id="rec-subtotal">Rp 0</span>
+          </div>
+          <div class="rec-row">
+            <span>Pajak (10%)</span>
+            <span id="rec-tax">Rp 0</span>
+          </div>
+          <div class="rec-row">
+            <span>Service (5%)</span>
+            <span id="rec-service">Rp 0</span>
+          </div>
+          <div class="rec-row bold-row">
+            <span>Total Bayar</span>
+            <span id="rec-total">Rp 0</span>
+          </div>
+        </div>
+        <div class="receipt-footer">
+          <hr class="dotted-divider">
+          <p>Terima Kasih Atas Kunjungan Anda</p>
+          <p>~ Taste of Heaven ~</p>
+        </div>
+      </div>
+      <button id="btn-close-receipt" class="btn btn-gold w-100 mt-2">Tutup & Selesai</button>
+    </div>
+  </div>
+
+  <!-- 5. CRUD MENU MODAL (ADMIN ONLY) -->
+  <div id="menu-crud-modal" class="modal">
+    <div class="modal-overlay" id="menu-crud-overlay"></div>
+    <div class="modal-content glass-modal">
+      <button class="modal-close" id="btn-close-menu-crud">&times;</button>
+      <div class="modal-body">
+        <h2 id="crud-modal-title">Tambah Menu Baru</h2>
+        <form id="form-menu-crud">
+          <input type="hidden" id="crud-item-id">
+          
+          <div class="input-group">
+            <label for="crud-item-name">Nama Menu:</label>
+            <input type="text" id="crud-item-name" required placeholder="Contoh: Royal Chocolate Roll Cake">
+          </div>
+
+          <div class="input-group">
+            <label for="crud-item-category">Kategori:</label>
+            <select id="crud-item-category" required>
+              <option value="sushi">Sushi & Roll</option>
+              <option value="cake">Kue & Desserts</option>
+              <option value="drink">Minuman Mewah</option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label for="crud-item-price">Harga (Rupiah):</label>
+            <input type="number" id="crud-item-price" required min="1000" placeholder="Contoh: 45000">
+          </div>
+
+          <div class="input-group">
+            <label for="crud-item-desc">Deskripsi:</label>
+            <textarea id="crud-item-desc" required placeholder="Jelaskan cita rasa hidangan ini..."></textarea>
+          </div>
+
+          <div class="input-group">
+            <label for="crud-item-image">Pilihan Gambar Menu:</label>
+            <select id="crud-item-image" required>
+              <!-- Opsi gambar representatif yang siap pakai -->
+              <option value="assets/heavoria_cake.png">Kemewahan Kue Chocolate (heavoria_cake.png)</option>
+              <option value="assets/heavoria_sushi.png">Kesegaran Salmon Sushi (heavoria_sushi.png)</option>
+              <option value="assets/heavoria_drink.png">Iced Coffee Golden Flakes (heavoria_drink.png)</option>
+              <option value="https://placehold.co/300x200/422/fd3?text=Heavoria+Cuisine">Placeholder Makanan Umum</option>
+            </select>
+          </div>
+
+          <button type="submit" id="btn-submit-crud" class="btn btn-gold w-100 mt-2">Simpan Menu</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. RESET PASSWORD MODAL -->
+  <div id="reset-password-modal" class="modal">
+    <div class="modal-overlay" id="reset-password-overlay"></div>
+    <div class="modal-content glass-modal small-modal">
+      <button class="modal-close" id="btn-close-reset-modal">&times;</button>
+      <div class="modal-body">
+        <h2 style="font-family: var(--font-serif); text-align: center; margin-bottom: 20px; color: var(--color-primary-gold);">Reset Password</h2>
+        <p style="font-size: 0.8rem; text-align: center; color: var(--color-text-muted); margin-top: -10px; margin-bottom: 20px;">Masukkan username & nomor telepon terdaftar untuk mengganti kata sandi Anda</p>
+        <form id="form-reset-password">
+          <div class="input-group">
+            <input type="text" id="reset-username" placeholder="Username" required>
+          </div>
+          <div class="input-group">
+            <input type="tel" id="reset-phone" placeholder="Phone Number" required>
+          </div>
+          <div class="input-group password-group">
+            <input type="password" id="reset-new-password" placeholder="New Password" required>
+            <span class="toggle-password" data-target="reset-new-password">
+              <svg class="eye-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </span>
+          </div>
+          <div class="input-group password-group">
+            <input type="password" id="reset-confirm-password" placeholder="Confirm New Password" required>
+            <span class="toggle-password" data-target="reset-confirm-password">
+              <svg class="eye-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </span>
+          </div>
+
+          <div class="error-message" id="reset-modal-error">
+            Error! Data tidak cocok atau password baru tidak sesuai.
+          </div>
+
+          <button type="submit" class="btn btn-translucent btn-auth mt-2">Reset Password!</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Javascript -->
+  <script src="app.js"></script>
+</body>
+</html>
