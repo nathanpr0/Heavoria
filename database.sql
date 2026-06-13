@@ -5,6 +5,10 @@
 -- Database relasional nyata (seperti MySQL, PostgreSQL, atau SQLite).
 -- ==========================================================================
 
+CREATE DATABASE Heavoria;
+
+USE Heavoria;
+
 -- Hapus tabel jika sudah ada (untuk keperluan reset)
 DROP TABLE IF EXISTS order_items;
 DROP TABLE IF EXISTS orders;
@@ -12,6 +16,7 @@ DROP TABLE IF EXISTS menu;
 DROP TABLE IF EXISTS users;
 
 -- 1. TABEL USERS (Menyimpan akun pengguna & peran mereka)
+
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
