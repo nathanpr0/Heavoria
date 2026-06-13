@@ -16,7 +16,7 @@
   </div>
 
   <div class="auth-box">
-    <form id="form-login">
+    <form id="form-login" autocomplete="off">
       <div class="input-group">
         <input type="text" id="login-username" placeholder="Username" required>
       </div>
