@@ -8,16 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
-
-  <!-- Background Layer -->
-  <div class="app-background"></div>
-  <div class="app-overlay"></div>
-
-  <!-- Gold Frame Border -->
-  <div class="gold-frame"></div>
 
   <!-- MAIN CONTAINER (SPA) -->
   <div id="app-container">

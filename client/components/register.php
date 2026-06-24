@@ -1,5 +1,10 @@
 <!-- 3. REGISTER (SIGN IN) SCREEN -->
 <section id="register-screen" class="screen-view">
+  <!-- Background Layer -->
+  <div class="app-background"></div>
+  <div class="app-overlay"></div>
+  <!-- Background Layer -->
+
   <div class="logo-container">
     <div class="circular-logo">
       <img src="assets/heavoria_logo.png" alt="Heavoria Logo" onerror="this.src='https://placehold.co/100x100/422/fd3?text=H'">

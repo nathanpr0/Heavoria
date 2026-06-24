@@ -5,7 +5,7 @@
 
 /* 1. Global Reset & Variables */
 :root {
-  --color-primary-gold: #d4af37;
+  --color-primary-gold: #e3912d;
   --color-dark-gold: #b8860b;
   --color-light-gold: #f3e5ab;
   --color-bg-dark: #140c06;
@@ -62,27 +62,6 @@ body {
   height: 100vh;
   background: radial-gradient(circle, rgba(20,12,6,0.5) 0%, rgba(10,5,2,0.9) 100%);
   z-index: -1;
-}
-
-/* Double Golden Frame Border from Mockup */
-.gold-frame {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  right: 10px;
-  bottom: 10px;
-  border: 1.5px solid var(--color-primary-gold);
-  pointer-events: none;
-  z-index: 999;
-}
-.gold-frame::after {
-  content: '';
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  right: 4px;
-  bottom: 4px;
-  border: 0.5px solid rgba(212, 175, 55, 0.4);
 }
 
 /* 3. Reusable Button and Input Components */
@@ -151,13 +130,14 @@ body {
   min-height: 100vh;
   position: relative;
   z-index: 10;
+  border: 1.5px solid var(--color-primary-gold);
+  margin: 15px;
 }
 
 .screen-view {
   display: none;
   width: 100%;
   min-height: 100vh;
-  padding: 40px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -417,9 +397,9 @@ body {
 .dashboard-view {
   display: none;
   flex-direction: column;
-  padding: 0;
   justify-content: flex-start;
   min-height: 100vh;
+  padding: 20px;
 }
 .dashboard-view.active {
   display: flex;
@@ -1766,8 +1746,9 @@ body {
 
 /* ==================== NEW CUSTOM MOCKUP STYLING ==================== */
 .dashboard-header-new {
+  width: 100%;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   padding: 12px 20px;
   background: #0f0a06;
@@ -1806,7 +1787,7 @@ body {
 
 .header-search-box-new {
   position: relative;
-  width: 150px;
+  width: 400px;
   border: 1px solid var(--color-primary-gold);
   border-radius: 6px;
   overflow: hidden;
@@ -1871,10 +1852,8 @@ body {
 }
 
 .dashboard-body-new {
-  padding: 30px;
-  flex-grow: 1;
-  overflow-y: auto;
-  min-height: calc(100vh - 120px);
+  padding: 50px;
+  width: 90dvw;
 }
 
 .catalog-lobby-view {
