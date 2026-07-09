@@ -2,10 +2,10 @@
 <div id="tab-admin-menu" class="tab-pane">
   <div class="section-header flex-header">
     <div>
-      <h2>Kelola Menu Restoran</h2>
-      <p>Tambah, edit, atau hapus makanan dari daftar menu katalog.</p>
+      <h2>Tambah / Hapus Produk</h2>
+      <p>Kelola produk Nigiri, Sushi Roll, dan Towel Cake dari katalog Heavoria.</p>
     </div>
-    <button id="btn-add-menu-modal" class="btn btn-gold">+ Tambah Menu</button>
+    <button id="btn-add-menu-modal" class="btn btn-gold">+ Tambah Produk</button>
   </div>
 
   <div class="table-responsive">

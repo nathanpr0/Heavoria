@@ -12,7 +12,8 @@
       <div class="receipt-info">
         <p><strong>Order ID:</strong> <span id="rec-order-id">ORD-000</span></p>
         <p><strong>Tanggal:</strong> <span id="rec-date">2026-06-06 12:00</span></p>
-        <p><strong>Meja:</strong> <span id="rec-table">0</span></p>
+        <p><strong>Pesanan:</strong> <span id="rec-fulfillment">Pick Up UBD</span></p>
+        <p><strong>Tanggal Ambil:</strong> <span id="rec-pickup-date">Menunggu admin</span></p>
         <p><strong>Metode:</strong> <span id="rec-method">QRIS</span></p>
         <hr class="dotted-divider">
       </div>
@@ -26,12 +27,8 @@
           <span id="rec-subtotal">Rp 0</span>
         </div>
         <div class="rec-row">
-          <span>Pajak (10%)</span>
-          <span id="rec-tax">Rp 0</span>
-        </div>
-        <div class="rec-row">
-          <span>Service (5%)</span>
-          <span id="rec-service">Rp 0</span>
+          <span>Ongkos Kirim</span>
+          <span id="rec-shipping">Rp 0</span>
         </div>
         <div class="rec-row bold-row">
           <span>Total Bayar</span>

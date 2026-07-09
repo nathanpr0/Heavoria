@@ -16,6 +16,8 @@ switch ($action) {
                 'success' => true,
                 'user' => [
                     'username' => $user['username'],
+                    'email' => $user['email'] ?? '',
+                    'phone' => $user['phone'] ?? '',
                     'role' => $user['role']
                 ]
             ]);
@@ -41,8 +43,8 @@ switch ($action) {
         }
 
         // Search user in database
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(?)");
-        $stmt->execute([$username]);
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?) OR phone = ?");
+        $stmt->execute([$username, $username, $username]);
         $user = $stmt->fetch();
 
         // Note: Password checks should be password_verify() in real apps.
@@ -59,12 +61,18 @@ switch ($action) {
                 $_SESSION['user'] = [
                     'id' => $user['id'],
                     'username' => $user['username'],
+                    'email' => $user['email'] ?? '',
+                    'phone' => $user['phone'] ?? '',
                     'role' => $user['role']
                 ];
+                $stmtSeen = $pdo->prepare("UPDATE users SET last_seen = NOW() WHERE id = ?");
+                $stmtSeen->execute([$user['id']]);
                 sendJsonResponse([
                     'success' => true,
                     'user' => [
                         'username' => $user['username'],
+                        'email' => $user['email'] ?? '',
+                        'phone' => $user['phone'] ?? '',
                         'role' => $user['role']
                     ]
                 ]);
@@ -82,17 +90,22 @@ switch ($action) {
         $input = getJsonInput();
         $username = trim($input['username'] ?? '');
         $phone = trim($input['phone'] ?? '');
+        $email = trim($input['email'] ?? '');
         $password = $input['password'] ?? '';
 
-        if (empty($username) || empty($phone) || empty($password)) {
+        if (empty($username) || empty($phone) || empty($email) || empty($password)) {
             sendJsonResponse(['success' => false, 'message' => 'All fields are required'], 400);
         }
 
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || !str_ends_with(strtolower($email), '@gmail.com')) {
+            sendJsonResponse(['success' => false, 'message' => 'Gmail address tidak valid. Gunakan alamat @gmail.com.'], 400);
+        }
+
         // Check if username exists
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE LOWER(username) = LOWER(?)");
-        $stmt->execute([$username]);
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?) OR phone = ?");
+        $stmt->execute([$username, $email, $phone]);
         if ($stmt->fetchColumn() > 0) {
-            sendJsonResponse(['success' => false, 'message' => 'Username sudah terdaftar.'], 400);
+            sendJsonResponse(['success' => false, 'message' => 'Username, Gmail, atau nomor telepon sudah terdaftar.'], 400);
         }
 
         // Insert new user
@@ -100,14 +113,16 @@ switch ($action) {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         
         try {
-            $stmt = $pdo->prepare("INSERT INTO users (username, phone, password, role) VALUES (?, ?, ?, 'user')");
-            $stmt->execute([$username, $phone, $hashedPassword]);
+            $stmt = $pdo->prepare("INSERT INTO users (username, email, phone, password, role, last_seen) VALUES (?, ?, ?, ?, 'user', NOW())");
+            $stmt->execute([$username, $email, $phone, $hashedPassword]);
             
             // Auto login after registration
             $userId = $pdo->lastInsertId();
             $_SESSION['user'] = [
                 'id' => $userId,
                 'username' => $username,
+                'email' => $email,
+                'phone' => $phone,
                 'role' => 'user'
             ];
 
@@ -115,6 +130,8 @@ switch ($action) {
                 'success' => true,
                 'user' => [
                     'username' => $username,
+                    'email' => $email,
+                    'phone' => $phone,
                     'role' => 'user'
                 ]
             ]);
@@ -172,6 +189,31 @@ switch ($action) {
             sendJsonResponse(['success' => true, 'message' => 'Password berhasil direset!']);
         } catch (PDOException $e) {
             sendJsonResponse(['success' => false, 'message' => 'Failed to update password: ' . $e->getMessage()], 500);
+        }
+        break;
+
+    case 'clients':
+        requireAdmin();
+        try {
+            $stmt = $pdo->query("
+                SELECT username, email, phone, last_seen
+                FROM users
+                WHERE role = 'user'
+                ORDER BY created_at DESC
+            ");
+            $clients = [];
+            while ($row = $stmt->fetch()) {
+                $isOnline = $row['last_seen'] && strtotime($row['last_seen']) >= time() - 900;
+                $clients[] = [
+                    'username' => $row['username'],
+                    'email' => $row['email'] ?? '-',
+                    'phone' => $row['phone'] ?? '-',
+                    'status' => $isOnline ? 'Online' : 'Offline'
+                ];
+            }
+            sendJsonResponse(['success' => true, 'clients' => $clients]);
+        } catch (PDOException $e) {
+            sendJsonResponse(['success' => false, 'message' => 'Failed to fetch clients: ' . $e->getMessage()], 500);
         }
         break;
 

@@ -13,11 +13,6 @@
     </div>
 
     <div class="drawer-body">
-      <div class="input-meja-group">
-        <label for="cart-table-number">Nomor Meja:</label>
-        <input type="number" id="cart-table-number" min="1" max="50" placeholder="Contoh: 12" required>
-      </div>
-
       <div class="cart-items-list" id="cart-items-container">
         <!-- Dinamis via JS -->
       </div>
@@ -28,12 +23,12 @@
           <span id="cart-subtotal">Rp 0</span>
         </div>
         <div class="summary-row">
-          <span>Pajak (10%)</span>
-          <span id="cart-tax">Rp 0</span>
+          <span>Ongkos Kirim</span>
+          <span id="cart-shipping">Rp 0</span>
         </div>
         <div class="summary-row">
-          <span>Service Charge (5%)</span>
-          <span id="cart-service">Rp 0</span>
+          <span>Mode Pesanan</span>
+          <span id="cart-order-type">Pilih saat preorder</span>
         </div>
         <hr class="summary-divider">
         <div class="summary-row total-row">
@@ -44,7 +39,7 @@
     </div>
 
     <div class="drawer-footer">
-      <button id="btn-checkout" class="btn btn-gold w-100">Checkout & Bayar</button>
+      <button id="btn-checkout" class="btn btn-gold w-100">Pre Order Now</button>
     </div>
   </div>
 </div>

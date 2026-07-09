@@ -17,6 +17,13 @@ let pendingCartItem = null;
 let globalMenu = [];
 let globalOrders = [];
 let globalTransactions = [];
+let globalClients = [];
+let checkoutFulfillment = {
+  type: "pickup",
+  distanceKm: 0,
+  addressNote: "",
+  deliveryFee: 0
+};
 
 // API HELPER FUNCTIONS
 const fetchMenu = async () => {
@@ -43,6 +50,17 @@ const fetchTransactions = async () => {
     globalTransactions = await res.json();
   } catch (err) {
     console.error("Failed to load transaction log", err);
+  }
+};
+
+const fetchClients = async () => {
+  try {
+    const res = await fetch('../server/auth.php?action=clients');
+    const data = await res.json();
+    globalClients = data.success ? data.clients : [];
+  } catch (err) {
+    console.error("Failed to load clients", err);
+    globalClients = [];
   }
 };
 
@@ -118,10 +136,12 @@ const navigateTo = async (screenId) => {
   } else if (screenId === "admin-dashboard") {
     await fetchOrders();
     await fetchTransactions();
+    await fetchClients();
     await updateAdminStats();
     renderAdminOrders();
     renderAdminMenuTable();
     renderAdminTransactions();
+    renderAdminClients();
   }
 };
 
@@ -178,7 +198,7 @@ const handleLogin = async (username, password) => {
   }
 };
 
-const handleRegister = async (username, phone, password, confirmPassword) => {
+const handleRegister = async (username, phone, email, password, confirmPassword) => {
   const errorEl = document.getElementById("reg-error");
   const pwdInput = document.getElementById("reg-password");
   const confInput = document.getElementById("reg-confirm-password");
@@ -192,15 +212,23 @@ const handleRegister = async (username, phone, password, confirmPassword) => {
     return;
   }
 
+  if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
+    errorEl.innerText = "Error! Gmail Address tidak valid.";
+    errorEl.style.display = "block";
+    document.getElementById("reg-email").classList.add("input-error-field");
+    return;
+  }
+
   errorEl.style.display = "none";
   pwdInput.classList.remove("input-error-field");
   confInput.classList.remove("input-error-field");
+  document.getElementById("reg-email").classList.remove("input-error-field");
   
   try {
     const res = await fetch('../server/auth.php?action=register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, phone, password })
+      body: JSON.stringify({ username, phone, email, password })
     });
     const data = await res.json();
 
@@ -505,46 +533,57 @@ const renderCartDrawer = () => {
 };
 
 const updateCartTotals = (subtotal) => {
-  const tax = subtotal * 0.1;
-  const service = subtotal * 0.05;
-  const total = subtotal + tax + service;
+  const total = subtotal + checkoutFulfillment.deliveryFee;
 
   document.getElementById("cart-subtotal").innerText = formatRupiah(subtotal);
-  document.getElementById("cart-tax").innerText = formatRupiah(tax);
-  document.getElementById("cart-service").innerText = formatRupiah(service);
+  document.getElementById("cart-shipping").innerText = formatRupiah(checkoutFulfillment.deliveryFee);
+  document.getElementById("cart-order-type").innerText = checkoutFulfillment.type === "delivery" ? "Delivery" : "Pick Up UBD";
   document.getElementById("cart-total").innerText = formatRupiah(total);
+};
+
+const getCartSubtotal = () => activeCart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+
+const updatePreorderSummary = () => {
+  const distanceInput = document.getElementById("delivery-distance");
+  const addressInput = document.getElementById("preorder-address");
+  checkoutFulfillment.distanceKm = checkoutFulfillment.type === "delivery"
+    ? Math.max(1, parseFloat(distanceInput.value || "1"))
+    : 0;
+  checkoutFulfillment.deliveryFee = checkoutFulfillment.type === "delivery"
+    ? Math.ceil(checkoutFulfillment.distanceKm * 4000)
+    : 0;
+  checkoutFulfillment.addressNote = addressInput ? addressInput.value.trim() : "";
+
+  const subtotal = getCartSubtotal();
+  document.getElementById("display-map-distance").innerText = checkoutFulfillment.distanceKm || 0;
+  document.getElementById("pre-subtotal").innerText = formatRupiah(subtotal);
+  document.getElementById("pre-shipping").innerText = formatRupiah(checkoutFulfillment.deliveryFee);
+  document.getElementById("pre-grandtotal").innerText = formatRupiah(subtotal + checkoutFulfillment.deliveryFee);
+  updateCartTotals(subtotal);
+};
+
+const setFulfillmentType = (type) => {
+  checkoutFulfillment.type = type;
+  document.getElementById("tab-type-pickup").classList.toggle("active", type === "pickup");
+  document.getElementById("tab-type-delivery").classList.toggle("active", type === "delivery");
+  document.getElementById("pickup-details-pane").classList.toggle("active", type === "pickup");
+  document.getElementById("delivery-details-pane").classList.toggle("active", type === "delivery");
+  updatePreorderSummary();
 };
 
 // Order Flow & Payment
 const handleCheckout = () => {
-  const tableInput = document.getElementById("cart-table-number");
-  if (!tableInput.value) {
-    alert("Silakan masukkan Nomor Meja terlebih dahulu!");
-    tableInput.focus();
-    return;
-  }
-
   if (activeCart.length === 0) {
     alert("Keranjang belanja kosong!");
     return;
   }
 
-  // Calculate totals
-  const subtotal = activeCart.reduce((acc, item) => acc + (item.price * item.qty), 0);
-  const tax = subtotal * 0.1;
-  const service = subtotal * 0.05;
-  const grandTotal = subtotal + tax + service;
-
-  // Set cash notice inside modal
-  document.getElementById("cash-payment-amount").innerText = formatRupiah(grandTotal);
-
-  // Close cart drawer & open payment modal
+  updatePreorderSummary();
   document.getElementById("cart-drawer").classList.remove("active");
-  document.getElementById("payment-modal").classList.add("active");
+  document.getElementById("preorder-modal").classList.add("active");
 };
 
 const processPayment = async () => {
-  const tableNum = document.getElementById("cart-table-number").value;
   const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
 
   try {
@@ -552,9 +591,11 @@ const processPayment = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        table: tableNum,
         items: activeCart,
-        method: paymentMethod
+        method: paymentMethod,
+        fulfillmentType: checkoutFulfillment.type,
+        distanceKm: checkoutFulfillment.distanceKm,
+        addressNote: checkoutFulfillment.addressNote
       })
     });
     const data = await res.json();
@@ -570,10 +611,11 @@ const processPayment = async () => {
       activeCart = [];
       updateCartBadge();
       renderCartDrawer();
-      document.getElementById("cart-table-number").value = "";
+      document.getElementById("preorder-address").value = "";
 
       // Fetch fresh orders
       await fetchOrders();
+      renderCustomerOrders();
     } else {
       alert("Checkout gagal: " + data.message);
     }
@@ -586,7 +628,10 @@ const processPayment = async () => {
 const showDigitalReceipt = (order) => {
   document.getElementById("rec-order-id").innerText = order.id;
   document.getElementById("rec-date").innerText = new Date(order.date).toLocaleString("id-ID");
-  document.getElementById("rec-table").innerText = order.table;
+  document.getElementById("rec-fulfillment").innerText = order.fulfillmentType === "delivery"
+    ? `Delivery (${order.distanceKm} km)`
+    : "Pick Up UBD";
+  document.getElementById("rec-pickup-date").innerText = order.pickupDate || "Menunggu admin";
   document.getElementById("rec-method").innerText = order.method;
 
   const itemsContainer = document.getElementById("rec-items-container");
@@ -606,8 +651,7 @@ const showDigitalReceipt = (order) => {
   });
 
   document.getElementById("rec-subtotal").innerText = formatRupiah(order.subtotal);
-  document.getElementById("rec-tax").innerText = formatRupiah(order.tax);
-  document.getElementById("rec-service").innerText = formatRupiah(order.service);
+  document.getElementById("rec-shipping").innerText = formatRupiah(order.deliveryFee || 0);
   document.getElementById("rec-total").innerText = formatRupiah(order.total);
 
   document.getElementById("receipt-modal").classList.add("active");
@@ -633,14 +677,24 @@ const renderCustomerOrders = () => {
     card.className = "order-card";
     
     let statusClass = "status-pending";
-    let statusLabel = "Menunggu Antrean (Pending)";
-    if (order.status === "Diproses") {
+    if (order.status === "Dikonfirmasi" || order.status === "Siap Diambil") {
       statusClass = "status-cooking";
-      statusLabel = "Sedang Dimasak (Diproses)";
     } else if (order.status === "Selesai") {
       statusClass = "status-completed";
-      statusLabel = "Selesai Disajikan";
     }
+
+    const statusSteps = [
+      { key: "Menunggu Verifikasi", label: "Waiting Verification" },
+      { key: "Dikonfirmasi", label: "Confirmed" },
+      { key: "Siap Diambil", label: "Order Is Ready" },
+      { key: "Selesai", label: "Completed" }
+    ];
+    const countersHtml = statusSteps.map(step => `
+      <div class="status-counter">
+        <span>${step.label}</span>
+        <strong>${order.status === step.key ? 1 : 0}</strong>
+      </div>
+    `).join("");
 
     const itemsSummaryList = order.items.map(it => `${it.name} (x${it.qty})`).join(", ");
 
@@ -648,14 +702,17 @@ const renderCustomerOrders = () => {
       <div class="order-card-header">
         <div>
           <span class="order-id-label">${order.id}</span>
-          <span class="order-time-label"> - Meja ${order.table} | ${new Date(order.date).toLocaleTimeString("id-ID")}</span>
+          <span class="order-time-label"> - ${order.fulfillmentType === "delivery" ? "Delivery" : "Pick Up UBD"} | ${new Date(order.date).toLocaleTimeString("id-ID")}</span>
         </div>
-        <span class="status-badge ${statusClass}">${statusLabel}</span>
+        <span class="status-badge ${statusClass}">${order.status}</span>
       </div>
+      <div class="order-status-grid">${countersHtml}</div>
       <div class="order-card-body">
         <div class="order-items-summary">
           <p><strong>Pesanan:</strong> ${itemsSummaryList}</p>
           <p><strong>Metode Bayar:</strong> ${order.method}</p>
+          <p><strong>Tanggal Pengambilan:</strong> ${order.pickupDate || "Menunggu admin"}</p>
+          ${order.rejectionReason ? `<p><strong>Alasan Ditolak:</strong> ${order.rejectionReason}</p>` : ""}
           <button class="btn-view-receipt" data-id="${order.id}">Lihat Struk</button>
         </div>
         <div class="order-total-price text-gold">
@@ -714,9 +771,9 @@ const renderAdminCategoryChart = (categoryTotals) => {
   const maxVal = Math.max(categoryTotals.sushi, categoryTotals.cake, categoryTotals.drink, 1);
 
   const categories = [
-    { key: "sushi", label: "Sushi & Roll" },
-    { key: "cake", label: "Kue & Desserts" },
-    { key: "drink", label: "Minuman Mewah" }
+    { key: "sushi", label: "Japanese Menu" },
+    { key: "cake", label: "Towel Cake" },
+    { key: "drink", label: "Elixir Drink" }
   ];
 
   categories.forEach(cat => {
@@ -743,7 +800,7 @@ const renderAdminOrders = () => {
   const orders = getOrders();
   
   const filteredOrders = orders.filter(o => {
-    if (activeAdminStatusFilter === "all") return o.status !== "Selesai";
+    if (activeAdminStatusFilter === "all") return o.status !== "Selesai" && o.status !== "Ditolak";
     return o.status === activeAdminStatusFilter;
   });
 
@@ -757,44 +814,58 @@ const renderAdminOrders = () => {
     row.className = "admin-order-row";
 
     let actionBtnHtml = "";
-    if (order.status === "Pending") {
-      actionBtnHtml = `<button class="btn-action-status btn-action-cook" data-id="${order.id}">Mulai Masak</button>`;
-    } else if (order.status === "Diproses") {
-      actionBtnHtml = `<button class="btn-action-status btn-action-complete" data-id="${order.id}">Sajikan / Selesai</button>`;
+    if (order.status === "Menunggu Verifikasi") {
+      actionBtnHtml = `
+        <button class="btn-action-status btn-action-cook" data-id="${order.id}" data-next-status="Dikonfirmasi">Confirm</button>
+        <button class="btn-action-status btn-action-reject" data-id="${order.id}" data-next-status="Ditolak">Tolak</button>
+      `;
+    } else if (order.status === "Dikonfirmasi") {
+      actionBtnHtml = `<button class="btn-action-status btn-action-cook" data-id="${order.id}" data-next-status="Siap Diambil">Tandai Siap</button>`;
+    } else if (order.status === "Siap Diambil") {
+      actionBtnHtml = `<button class="btn-action-status btn-action-complete" data-id="${order.id}" data-next-status="Selesai">Complete</button>`;
     }
 
     const itemsText = order.items.map(it => `${it.name} [x${it.qty}] ${it.notes ? `(Note: "${it.notes}")` : ""}`).join(", ");
+    const deliveryText = order.fulfillmentType === "delivery"
+      ? `Delivery ${order.distanceKm} km (${formatRupiah(order.deliveryFee || 0)})`
+      : "Pick Up UBD (Free)";
 
     row.innerHTML = `
       <div class="order-meta-info">
-        <span class="order-id-label">${order.id} | Meja ${order.table}</span>
-        <span class="order-time-label">Waktu: ${new Date(order.date).toLocaleTimeString("id-ID")} | Metode: ${order.method}</span>
+        <span class="order-id-label">${order.id} | ${order.username}</span>
+        <span class="order-time-label">Waktu: ${new Date(order.date).toLocaleTimeString("id-ID")} | ${deliveryText} | Metode: ${order.method}</span>
         <p class="order-items-detail-text"><strong>Rincian:</strong> ${itemsText}</p>
+        <p class="order-items-detail-text"><strong>Catatan:</strong> ${order.addressNote || "-"}</p>
+        ${order.pickupDate ? `<p class="order-items-detail-text"><strong>Tanggal Pengambilan:</strong> ${order.pickupDate}</p>` : ""}
       </div>
       <div class="order-row-actions">
-        <span class="status-badge ${order.status === "Pending" ? "status-pending" : "status-cooking"}">${order.status}</span>
+        <span class="status-badge ${order.status === "Menunggu Verifikasi" ? "status-pending" : "status-cooking"}">${order.status}</span>
         ${actionBtnHtml}
       </div>
     `;
 
     // Action button listeners
-    const actionBtn = row.querySelector(".btn-action-status");
-    if (actionBtn) {
+    row.querySelectorAll(".btn-action-status").forEach(actionBtn => {
       actionBtn.addEventListener("click", () => {
-        updateOrderStatus(order.id);
+        let reason = "";
+        const nextStatus = actionBtn.getAttribute("data-next-status");
+        if (nextStatus === "Ditolak") {
+          reason = prompt("Masukkan alasan penolakan pesanan:") || "Pesanan ditolak admin.";
+        }
+        updateOrderStatus(order.id, nextStatus, reason);
       });
-    }
+    });
 
     container.appendChild(row);
   });
 };
 
-const updateOrderStatus = async (orderId) => {
+const updateOrderStatus = async (orderId, status = "", reason = "") => {
   try {
     const res = await fetch('../server/orders.php?action=update_status', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: orderId })
+      body: JSON.stringify({ id: orderId, status, reason })
     });
     const data = await res.json();
 
@@ -804,6 +875,7 @@ const updateOrderStatus = async (orderId) => {
       await updateAdminStats();
       renderAdminOrders();
       renderAdminTransactions();
+      renderAdminClients();
     } else {
       alert("Gagal memperbarui status order: " + data.message);
     }
@@ -934,10 +1006,32 @@ const renderAdminTransactions = () => {
     tr.innerHTML = `
       <td><span class="order-id-label">${order.id}</span></td>
       <td style="font-size:0.8rem; color:#aaa;">${new Date(order.date).toLocaleString("id-ID")}</td>
-      <td><strong>Meja ${order.table}</strong></td>
+      <td><strong>${order.fulfillmentType === "delivery" ? "Delivery" : "Pick Up UBD"}</strong></td>
       <td style="font-size:0.85rem; max-width: 300px;">${itemNames}</td>
       <td><span class="status-badge status-completed">${order.method}</span></td>
       <td><strong class="text-gold">${formatRupiah(order.total)}</strong></td>
+    `;
+    tbody.appendChild(tr);
+  });
+};
+
+const renderAdminClients = () => {
+  const tbody = document.getElementById("admin-clients-table-body");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+  if (globalClients.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" class="cart-empty-text" style="text-align:center;">Belum ada client terdaftar.</td></tr>`;
+    return;
+  }
+
+  globalClients.forEach(client => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><strong>${client.username}</strong></td>
+      <td>${client.email || "-"}</td>
+      <td>${client.phone || "-"}</td>
+      <td><span class="status-badge ${client.status === "Online" ? "status-completed" : "status-pending"}">${client.status}</span></td>
     `;
     tbody.appendChild(tr);
   });
@@ -952,11 +1046,76 @@ document.addEventListener("DOMContentLoaded", async () => {
   await fetchMenu();
 
   // If user session is already logged in, navigate
+  const isAdminApp = !!document.getElementById("admin-login-screen") && !document.getElementById("login-screen");
+
   if (currentUser && currentUser.role === "admin") {
     navigateTo("admin-dashboard");
+  } else if (isAdminApp) {
+    navigateTo("admin-login-screen");
   } else {
     // Default to customer dashboard for Guests and regular Users on startup
     navigateTo("customer-dashboard");
+  }
+
+  if (isAdminApp) {
+    document.querySelectorAll(".toggle-password").forEach(toggle => {
+      toggle.addEventListener("click", () => {
+        const targetId = toggle.getAttribute("data-target");
+        const pwdInput = document.getElementById(targetId);
+        pwdInput.type = pwdInput.type === "password" ? "text" : "password";
+        toggle.style.color = pwdInput.type === "text" ? "var(--color-primary-gold)" : "";
+      });
+    });
+
+    const adminForm = document.getElementById("form-admin-login");
+    const adminIdentifier = document.getElementById("admin-login-identifier");
+    const adminPassword = document.getElementById("admin-login-password");
+    const adminError = document.getElementById("admin-login-error");
+
+    adminForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      await handleLogin(adminIdentifier.value, adminPassword.value);
+      if (!currentUser || currentUser.role !== "admin") {
+        adminError.style.display = "block";
+        adminPassword.classList.add("input-error-field");
+      }
+    });
+
+    document.querySelectorAll(".admin-nav .nav-item").forEach(item => {
+      item.addEventListener("click", () => {
+        document.querySelectorAll(".admin-nav .nav-item").forEach(nav => nav.classList.remove("active"));
+        item.classList.add("active");
+        const tabId = item.getAttribute("data-tab");
+        document.querySelectorAll("#admin-dashboard .tab-pane").forEach(pane => pane.classList.remove("active"));
+        document.getElementById("tab-" + tabId).classList.add("active");
+      });
+    });
+
+    document.querySelectorAll(".status-filter-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".status-filter-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        activeAdminStatusFilter = btn.getAttribute("data-status-filter");
+        renderAdminOrders();
+      });
+    });
+
+    document.getElementById("btn-add-menu-modal").addEventListener("click", () => openMenuCrudModal());
+    document.getElementById("btn-close-menu-crud").addEventListener("click", () => document.getElementById("menu-crud-modal").classList.remove("active"));
+    document.getElementById("menu-crud-overlay").addEventListener("click", () => document.getElementById("menu-crud-modal").classList.remove("active"));
+    document.getElementById("form-menu-crud").addEventListener("submit", (e) => {
+      e.preventDefault();
+      saveMenuItem({
+        id: document.getElementById("crud-item-id").value,
+        name: document.getElementById("crud-item-name").value,
+        category: document.getElementById("crud-item-category").value,
+        price: parseInt(document.getElementById("crud-item-price").value, 10),
+        desc: document.getElementById("crud-item-desc").value,
+        image: document.getElementById("crud-item-image").value
+      });
+    });
+
+    return;
   }
 
   // 7.1 Router Navigation Listeners
@@ -1017,7 +1176,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // Clear login error state on typing
-  const loginUser = document.getElementById("login-username");
+  const loginUser = document.getElementById("login-identifier");
   const loginPass = document.getElementById("login-password");
   const loginError = document.getElementById("login-error");
 
@@ -1032,6 +1191,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Clear register error state on typing
   const regUser = document.getElementById("reg-username");
   const regPhone = document.getElementById("reg-phone");
+  const regEmail = document.getElementById("reg-email");
   const regPass = document.getElementById("reg-password");
   const regConf = document.getElementById("reg-confirm-password");
   const regError = document.getElementById("reg-error");
@@ -1040,10 +1200,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     regError.style.display = "none";
     regPass.classList.remove("input-error-field");
     regConf.classList.remove("input-error-field");
+    regEmail.classList.remove("input-error-field");
   };
 
   regUser.addEventListener("input", clearRegisterError);
   regPhone.addEventListener("input", clearRegisterError);
+  regEmail.addEventListener("input", clearRegisterError);
   regPass.addEventListener("input", clearRegisterError);
   regConf.addEventListener("input", clearRegisterError);
 
@@ -1059,10 +1221,39 @@ document.addEventListener("DOMContentLoaded", async () => {
     e.preventDefault();
     const user = regUser.value;
     const phone = regPhone.value;
+    const email = regEmail.value;
     const pass = regPass.value;
     const conf = regConf.value;
-    handleRegister(user, phone, pass, conf);
+    handleRegister(user, phone, email, pass, conf);
   });
+
+  const adminForm = document.getElementById("form-admin-login");
+  if (adminForm) {
+    const adminIdentifier = document.getElementById("admin-login-identifier");
+    const adminPassword = document.getElementById("admin-login-password");
+    const adminError = document.getElementById("admin-login-error");
+
+    adminForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      await handleLogin(adminIdentifier.value, adminPassword.value);
+      if (!currentUser || currentUser.role !== "admin") {
+        adminError.style.display = "block";
+        adminPassword.classList.add("input-error-field");
+      } else {
+        adminError.style.display = "none";
+        adminPassword.classList.remove("input-error-field");
+      }
+    });
+
+    adminIdentifier.addEventListener("input", () => {
+      adminError.style.display = "none";
+      adminPassword.classList.remove("input-error-field");
+    });
+    adminPassword.addEventListener("input", () => {
+      adminError.style.display = "none";
+      adminPassword.classList.remove("input-error-field");
+    });
+  }
 
   document.getElementById("form-reset-password").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -1197,6 +1388,28 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Checkout flows
   document.getElementById("btn-checkout").addEventListener("click", handleCheckout);
 
+  document.getElementById("tab-type-pickup").addEventListener("click", () => setFulfillmentType("pickup"));
+  document.getElementById("tab-type-delivery").addEventListener("click", () => setFulfillmentType("delivery"));
+  document.getElementById("delivery-distance").addEventListener("input", updatePreorderSummary);
+  document.getElementById("preorder-address").addEventListener("input", updatePreorderSummary);
+  document.getElementById("btn-close-preorder").addEventListener("click", () => {
+    document.getElementById("preorder-modal").classList.remove("active");
+  });
+  document.getElementById("preorder-modal-overlay").addEventListener("click", () => {
+    document.getElementById("preorder-modal").classList.remove("active");
+  });
+  document.getElementById("btn-preorder-proceed").addEventListener("click", () => {
+    updatePreorderSummary();
+    if (checkoutFulfillment.type === "delivery" && !checkoutFulfillment.addressNote) {
+      alert("Silakan isi alamat delivery terlebih dahulu.");
+      document.getElementById("preorder-address").focus();
+      return;
+    }
+    document.getElementById("cash-payment-amount").innerText = formatRupiah(getCartSubtotal() + checkoutFulfillment.deliveryFee);
+    document.getElementById("preorder-modal").classList.remove("active");
+    document.getElementById("payment-modal").classList.add("active");
+  });
+
   // Close payment modal
   document.getElementById("btn-close-payment").addEventListener("click", () => {
     document.getElementById("payment-modal").classList.remove("active");
@@ -1255,29 +1468,31 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  // Admin CRUD Modal Trigger
-  document.getElementById("btn-add-menu-modal").addEventListener("click", () => {
-    openMenuCrudModal();
-  });
+  if (document.getElementById("btn-add-menu-modal")) {
+    // Admin CRUD Modal Trigger
+    document.getElementById("btn-add-menu-modal").addEventListener("click", () => {
+      openMenuCrudModal();
+    });
 
-  document.getElementById("btn-close-menu-crud").addEventListener("click", () => {
-    document.getElementById("menu-crud-modal").classList.remove("active");
-  });
-  document.getElementById("menu-crud-overlay").addEventListener("click", () => {
-    document.getElementById("menu-crud-modal").classList.remove("active");
-  });
+    document.getElementById("btn-close-menu-crud").addEventListener("click", () => {
+      document.getElementById("menu-crud-modal").classList.remove("active");
+    });
+    document.getElementById("menu-crud-overlay").addEventListener("click", () => {
+      document.getElementById("menu-crud-modal").classList.remove("active");
+    });
 
-  // CRUD Menu Submit
-  document.getElementById("form-menu-crud").addEventListener("submit", (e) => {
-    e.preventDefault();
-    const id = document.getElementById("crud-item-id").value;
-    const name = document.getElementById("crud-item-name").value;
-    const category = document.getElementById("crud-item-category").value;
-    const price = parseInt(document.getElementById("crud-item-price").value, 10);
-    const desc = document.getElementById("crud-item-desc").value;
-    const image = document.getElementById("crud-item-image").value;
+    // CRUD Menu Submit
+    document.getElementById("form-menu-crud").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const id = document.getElementById("crud-item-id").value;
+      const name = document.getElementById("crud-item-name").value;
+      const category = document.getElementById("crud-item-category").value;
+      const price = parseInt(document.getElementById("crud-item-price").value, 10);
+      const desc = document.getElementById("crud-item-desc").value;
+      const image = document.getElementById("crud-item-image").value;
 
-    saveMenuItem({ id, name, category, price, desc, image });
-  });
+      saveMenuItem({ id, name, category, price, desc, image });
+    });
+  }
 
 });

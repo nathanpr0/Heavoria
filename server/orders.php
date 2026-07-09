@@ -18,12 +18,14 @@ switch ($action) {
         $input = getJsonInput();
         $user = getCurrentUser();
         
-        $table = (int)($input['table'] ?? 0);
         $items = $input['items'] ?? [];
         $method = trim($input['method'] ?? 'QRIS');
+        $fulfillmentType = trim($input['fulfillmentType'] ?? 'pickup');
+        $distanceKm = max(0, (float)($input['distanceKm'] ?? 0));
+        $addressNote = trim($input['addressNote'] ?? '');
 
-        if ($table <= 0 || empty($items)) {
-            sendJsonResponse(['success' => false, 'message' => 'Nomor meja dan daftar pesanan tidak boleh kosong.'], 400);
+        if (empty($items)) {
+            sendJsonResponse(['success' => false, 'message' => 'Daftar pesanan tidak boleh kosong.'], 400);
         }
 
         // Validate values
@@ -31,9 +33,10 @@ switch ($action) {
         foreach ($items as $item) {
             $subtotal += (int)$item['price'] * (int)$item['qty'];
         }
-        $tax = (int)($subtotal * 0.1);
-        $service = (int)($subtotal * 0.05);
-        $total = $subtotal + $tax + $service;
+        $tax = 0;
+        $service = 0;
+        $deliveryFee = $fulfillmentType === 'delivery' ? (int)ceil($distanceKm * 4000) : 0;
+        $total = $subtotal + $deliveryFee;
 
         $orderId = "ORD-" . substr(time(), -6) . rand(10, 99);
 
@@ -41,8 +44,13 @@ switch ($action) {
             $pdo->beginTransaction();
 
             // Insert into orders table
-            $stmt = $pdo->prepare("INSERT INTO orders (id, username, table_number, subtotal, tax, service_charge, total, payment_method, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending')");
-            $stmt->execute([$orderId, $user['username'], $table, $subtotal, $tax, $service, $total, $method]);
+            $stmt = $pdo->prepare("
+                INSERT INTO orders
+                    (id, username, table_number, subtotal, tax, service_charge, delivery_fee, distance_km, fulfillment_type, address_note, total, payment_method, status)
+                VALUES
+                    (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Menunggu Verifikasi')
+            ");
+            $stmt->execute([$orderId, $user['username'], $subtotal, $tax, $service, $deliveryFee, $distanceKm, $fulfillmentType, $addressNote, $total, $method]);
 
             // Insert into order_items table
             $stmtItem = $pdo->prepare("INSERT INTO order_items (order_id, menu_id, qty, notes, price_at_order) VALUES (?, ?, ?, ?, ?)");
@@ -60,14 +68,19 @@ switch ($action) {
                 'order' => [
                     'id' => $orderId,
                     'username' => $user['username'],
-                    'table' => $table,
+                    'table' => 0,
+                    'fulfillmentType' => $fulfillmentType,
+                    'distanceKm' => $distanceKm,
+                    'deliveryFee' => $deliveryFee,
+                    'addressNote' => $addressNote,
+                    'pickupDate' => null,
                     'items' => $items,
                     'subtotal' => $subtotal,
                     'tax' => $tax,
                     'service' => $service,
                     'total' => $total,
                     'method' => $method,
-                    'status' => 'Pending',
+                    'status' => 'Menunggu Verifikasi',
                     'date' => date('c')
                 ]
             ]);
@@ -90,7 +103,7 @@ switch ($action) {
                     FROM orders o
                     LEFT JOIN order_items oi ON o.id = oi.order_id
                     LEFT JOIN menu m ON oi.menu_id = m.id
-                    WHERE o.status != 'Selesai'
+                    WHERE o.status NOT IN ('Selesai', 'Ditolak')
                     ORDER BY o.created_at ASC
                 ");
                 $stmt->execute();
@@ -115,6 +128,12 @@ switch ($action) {
                         'id' => $row['id'],
                         'username' => $row['username'],
                         'table' => $row['table_number'],
+                        'fulfillmentType' => $row['fulfillment_type'] ?? 'pickup',
+                        'distanceKm' => (float)($row['distance_km'] ?? 0),
+                        'deliveryFee' => (int)($row['delivery_fee'] ?? 0),
+                        'addressNote' => $row['address_note'] ?? '',
+                        'pickupDate' => $row['pickup_date'] ?? null,
+                        'rejectionReason' => $row['rejection_reason'] ?? '',
                         'subtotal' => (int)$row['subtotal'],
                         'tax' => (int)$row['tax'],
                         'service' => (int)$row['service_charge'],
@@ -166,6 +185,12 @@ switch ($action) {
                         'id' => $row['id'],
                         'username' => $row['username'],
                         'table' => $row['table_number'],
+                        'fulfillmentType' => $row['fulfillment_type'] ?? 'pickup',
+                        'distanceKm' => (float)($row['distance_km'] ?? 0),
+                        'deliveryFee' => (int)($row['delivery_fee'] ?? 0),
+                        'addressNote' => $row['address_note'] ?? '',
+                        'pickupDate' => $row['pickup_date'] ?? null,
+                        'rejectionReason' => $row['rejection_reason'] ?? '',
                         'subtotal' => (int)$row['subtotal'],
                         'tax' => (int)$row['tax'],
                         'service' => (int)$row['service_charge'],
@@ -208,6 +233,9 @@ switch ($action) {
         }
 
         try {
+            $requestedStatus = trim($input['status'] ?? '');
+            $reason = trim($input['reason'] ?? '');
+
             // Get current status
             $stmt = $pdo->prepare("SELECT status FROM orders WHERE id = ?");
             $stmt->execute([$orderId]);
@@ -218,14 +246,43 @@ switch ($action) {
             }
 
             $newStatus = $currentStatus;
-            if ($currentStatus === 'Pending') {
-                $newStatus = 'Diproses';
-            } elseif ($currentStatus === 'Diproses') {
+            if ($requestedStatus !== '') {
+                $allowed = ['Dikonfirmasi', 'Ditolak', 'Siap Diambil', 'Selesai'];
+                if (!in_array($requestedStatus, $allowed, true)) {
+                    sendJsonResponse(['success' => false, 'message' => 'Status tujuan tidak valid.'], 400);
+                }
+                $newStatus = $requestedStatus;
+            } elseif ($currentStatus === 'Menunggu Verifikasi') {
+                $newStatus = 'Dikonfirmasi';
+            } elseif ($currentStatus === 'Dikonfirmasi') {
+                $newStatus = 'Siap Diambil';
+            } elseif ($currentStatus === 'Siap Diambil') {
                 $newStatus = 'Selesai';
             }
 
-            $stmtUpdate = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
-            $stmtUpdate->execute([$newStatus, $orderId]);
+            $pickupDate = null;
+            if ($newStatus === 'Siap Diambil') {
+                $today = new DateTime('today');
+                $pickupDate = clone $today;
+                if ($pickupDate->format('N') !== '1') {
+                    $pickupDate->modify('next monday');
+                }
+            }
+
+            $stmtUpdate = $pdo->prepare("
+                UPDATE orders
+                SET status = ?,
+                    pickup_date = COALESCE(?, pickup_date),
+                    rejection_reason = CASE WHEN ? = 'Ditolak' THEN ? ELSE rejection_reason END
+                WHERE id = ?
+            ");
+            $stmtUpdate->execute([
+                $newStatus,
+                $pickupDate ? $pickupDate->format('Y-m-d') : null,
+                $newStatus,
+                $reason,
+                $orderId
+            ]);
 
             sendJsonResponse([
                 'success' => true,
