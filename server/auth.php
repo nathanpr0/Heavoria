@@ -116,24 +116,9 @@ switch ($action) {
             $stmt = $pdo->prepare("INSERT INTO users (username, email, phone, password, role, last_seen) VALUES (?, ?, ?, ?, 'user', NOW())");
             $stmt->execute([$username, $email, $phone, $hashedPassword]);
             
-            // Auto login after registration
-            $userId = $pdo->lastInsertId();
-            $_SESSION['user'] = [
-                'id' => $userId,
-                'username' => $username,
-                'email' => $email,
-                'phone' => $phone,
-                'role' => 'user'
-            ];
-
             sendJsonResponse([
                 'success' => true,
-                'user' => [
-                    'username' => $username,
-                    'email' => $email,
-                    'phone' => $phone,
-                    'role' => 'user'
-                ]
+                'message' => 'Akun berhasil dibuat. Silakan login.'
             ]);
         } catch (PDOException $e) {
             sendJsonResponse(['success' => false, 'message' => 'Registration failed: ' . $e->getMessage()], 500);
@@ -153,35 +138,66 @@ switch ($action) {
         sendJsonResponse(['success' => true, 'message' => 'Logged out successfully']);
         break;
 
+    case 'check_gmail':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            sendJsonResponse(['success' => false, 'message' => 'Invalid request method'], 405);
+        }
+
+        $input = getJsonInput();
+        $email = trim($input['email'] ?? '');
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || !str_ends_with(strtolower($email), '@gmail.com')) {
+            sendJsonResponse(['success' => false, 'message' => 'Gmail address tidak valid.'], 400);
+        }
+
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE LOWER(email) = LOWER(?) AND role = 'user'");
+        $stmt->execute([$email]);
+        if ((int)$stmt->fetchColumn() === 0) {
+            sendJsonResponse(['success' => false, 'message' => 'Gmail address tidak terdaftar.'], 404);
+        }
+
+        sendJsonResponse(['success' => true, 'message' => 'Verification code sent.']);
+        break;
+
     case 'reset_password':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             sendJsonResponse(['success' => false, 'message' => 'Invalid request method'], 405);
         }
 
         $input = getJsonInput();
+        $email = trim($input['email'] ?? '');
         $username = trim($input['username'] ?? '');
         $phone = trim($input['phone'] ?? '');
         $newPassword = $input['newPassword'] ?? '';
         $confirmPassword = $input['confirmPassword'] ?? '';
 
-        if (empty($username) || empty($phone) || empty($newPassword)) {
-            sendJsonResponse(['success' => false, 'message' => 'All fields are required'], 400);
+        if (empty($newPassword) || empty($confirmPassword)) {
+            sendJsonResponse(['success' => false, 'message' => 'Password baru dan konfirmasi wajib diisi.'], 400);
         }
 
         if ($newPassword !== $confirmPassword) {
             sendJsonResponse(['success' => false, 'message' => 'Password baru dan konfirmasi tidak cocok.'], 400);
         }
 
-        // Verify username + phone
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND phone = ?");
-        $stmt->execute([$username, $phone]);
-        $user = $stmt->fetch();
-
-        if (!$user) {
-            sendJsonResponse(['success' => false, 'message' => 'Username atau nomor telepon tidak ditemukan.'], 404);
+        if (!empty($email)) {
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL) || !str_ends_with(strtolower($email), '@gmail.com')) {
+                sendJsonResponse(['success' => false, 'message' => 'Gmail address tidak valid.'], 400);
+            }
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(email) = LOWER(?) AND role = 'user'");
+            $stmt->execute([$email]);
+        } else {
+            if (empty($username) || empty($phone)) {
+                sendJsonResponse(['success' => false, 'message' => 'Gmail address wajib diisi.'], 400);
+            }
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND phone = ?");
+            $stmt->execute([$username, $phone]);
         }
 
-        // Update password
+        $user = $stmt->fetch();
+        if (!$user) {
+            sendJsonResponse(['success' => false, 'message' => 'Akun tidak ditemukan.'], 404);
+        }
+
         $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
         try {
             $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");

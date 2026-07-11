@@ -13,6 +13,9 @@ let selectedFoodForModal = null;
 let currentQtyInModal = 1;
 let shouldOpenCartAfterLogin = false;
 let pendingCartItem = null;
+let pendingRegisterData = null;
+let pendingForgotGmail = "";
+const SIMULATED_OTP_CODE = "123456";
 
 let globalMenu = [];
 let globalOrders = [];
@@ -82,6 +85,13 @@ const checkSession = async () => {
 const getMenu = () => globalMenu;
 const getOrders = () => globalOrders;
 
+const resetLoginNoticeStyle = () => {
+  const loginError = document.getElementById("login-error");
+  if (!loginError) return;
+  loginError.style.background = "";
+  loginError.style.borderColor = "";
+  loginError.style.color = "";
+};
 // 3. UI HELPER FUNCTIONS
 const formatRupiah = (number) => {
   return new Intl.NumberFormat("id-ID", {
@@ -149,6 +159,7 @@ const navigateTo = async (screenId) => {
 const handleLogin = async (username, password) => {
   const errorEl = document.getElementById("login-error");
   const pwdInput = document.getElementById("login-password");
+  resetLoginNoticeStyle();
 
   try {
     const res = await fetch('../server/auth.php?action=login', {
@@ -202,8 +213,8 @@ const handleRegister = async (username, phone, email, password, confirmPassword)
   const errorEl = document.getElementById("reg-error");
   const pwdInput = document.getElementById("reg-password");
   const confInput = document.getElementById("reg-confirm-password");
-  
-  // Validation password match
+  const emailInput = document.getElementById("reg-email");
+
   if (password !== confirmPassword) {
     errorEl.innerText = "Error! The passwords do not match";
     errorEl.style.display = "block";
@@ -215,47 +226,64 @@ const handleRegister = async (username, phone, email, password, confirmPassword)
   if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
     errorEl.innerText = "Error! Gmail Address tidak valid.";
     errorEl.style.display = "block";
-    document.getElementById("reg-email").classList.add("input-error-field");
+    emailInput.classList.add("input-error-field");
     return;
   }
 
   errorEl.style.display = "none";
   pwdInput.classList.remove("input-error-field");
   confInput.classList.remove("input-error-field");
-  document.getElementById("reg-email").classList.remove("input-error-field");
-  
+  emailInput.classList.remove("input-error-field");
+
+  pendingRegisterData = { username, phone, email, password };
+  document.getElementById("reg-otp-error").style.display = "none";
+  document.getElementById("reg-otp-code").value = "";
+  document.getElementById("otp-reg-subtitle").innerText = `Kode verifikasi dikirim ke ${email}`;
+  navigateTo("register-otp-screen");
+};
+
+const completeRegisterAfterOtp = async () => {
+  const errorEl = document.getElementById("reg-otp-error");
+  const codeInput = document.getElementById("reg-otp-code");
+
+  if (codeInput.value.trim() !== SIMULATED_OTP_CODE) {
+    errorEl.innerText = "Error! Invalid verification code.";
+    errorEl.style.display = "block";
+    codeInput.classList.add("input-error-field");
+    return;
+  }
+
+  if (!pendingRegisterData) {
+    errorEl.innerText = "Data registrasi tidak ditemukan. Silakan isi form daftar ulang.";
+    errorEl.style.display = "block";
+    return;
+  }
+
+  errorEl.style.display = "none";
+  codeInput.classList.remove("input-error-field");
+
   try {
     const res = await fetch('../server/auth.php?action=register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, phone, email, password })
+      body: JSON.stringify(pendingRegisterData)
     });
     const data = await res.json();
 
     if (data.success) {
-      currentUser = data.user;
-      navigateTo("customer-dashboard");
-      if (pendingCartItem) {
-        const itemToAdd = pendingCartItem;
-        pendingCartItem = null;
-        addToCart(itemToAdd.item, itemToAdd.qty, itemToAdd.notes);
-        setTimeout(() => {
-          renderCartDrawer();
-          document.getElementById("cart-drawer").classList.add("active");
-        }, 100);
-      } else if (shouldOpenCartAfterLogin) {
-        shouldOpenCartAfterLogin = false;
-        setTimeout(() => {
-          renderCartDrawer();
-          document.getElementById("cart-drawer").classList.add("active");
-        }, 100);
-      }
+      pendingRegisterData = null;
       document.getElementById("form-register").reset();
+      document.getElementById("form-register-otp").reset();
+      const loginError = document.getElementById("login-error");
+      loginError.style.display = "block";
+      loginError.style.background = "rgba(46, 204, 113, 0.15)";
+      loginError.style.borderColor = "#2ecc71";
+      loginError.style.color = "#afffca";
+      loginError.innerHTML = "Akun berhasil dibuat. Silakan login dengan Gmail/nomor telepon Anda.";
+      navigateTo("login-screen");
     } else {
       errorEl.innerText = data.message || "Error! Gagal registrasi.";
       errorEl.style.display = "block";
-      pwdInput.classList.add("input-error-field");
-      confInput.classList.add("input-error-field");
     }
   } catch (err) {
     console.error("Register failure", err);
@@ -263,7 +291,6 @@ const handleRegister = async (username, phone, email, password, confirmPassword)
     errorEl.style.display = "block";
   }
 };
-
 const handleLogout = async () => {
   try {
     await fetch('../server/auth.php?action=logout');
@@ -277,15 +304,68 @@ const handleLogout = async () => {
   navigateTo("customer-dashboard");
 };
 
-// Handle Reset Password
-const handleResetPassword = async (username, phone, newPassword, confirmPassword) => {
-  const errorEl = document.getElementById("reset-modal-error");
-  const newPwdInput = document.getElementById("reset-new-password");
-  const confPwdInput = document.getElementById("reset-confirm-password");
+const requestForgotPasswordOtp = async (email) => {
+  const errorEl = document.getElementById("forgot-gmail-error");
+  const emailInput = document.getElementById("forgot-gmail-address");
 
-  // Validation: password match
+  if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
+    errorEl.innerText = "Error! Invalid Gmail Address.";
+    errorEl.style.display = "block";
+    emailInput.classList.add("input-error-field");
+    return;
+  }
+
+  try {
+    const res = await fetch('../server/auth.php?action=check_gmail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      pendingForgotGmail = email;
+      errorEl.style.display = "none";
+      emailInput.classList.remove("input-error-field");
+      document.getElementById("forgot-otp-code").value = "";
+      document.getElementById("forgot-otp-error").style.display = "none";
+      document.getElementById("otp-forgot-subtitle").innerText = `Kode verifikasi dikirim ke ${email}`;
+      navigateTo("forgot-otp-screen");
+    } else {
+      errorEl.innerText = data.message || "Error! Gmail address tidak valid.";
+      errorEl.style.display = "block";
+      emailInput.classList.add("input-error-field");
+    }
+  } catch (err) {
+    console.error("Forgot Gmail failure", err);
+    errorEl.innerText = "Error! Gagal terhubung ke server.";
+    errorEl.style.display = "block";
+  }
+};
+
+const verifyForgotOtp = (code) => {
+  const errorEl = document.getElementById("forgot-otp-error");
+  const codeInput = document.getElementById("forgot-otp-code");
+
+  if (code.trim() !== SIMULATED_OTP_CODE) {
+    errorEl.innerText = "Error! Invalid verification code.";
+    errorEl.style.display = "block";
+    codeInput.classList.add("input-error-field");
+    return;
+  }
+
+  errorEl.style.display = "none";
+  codeInput.classList.remove("input-error-field");
+  navigateTo("forgot-new-pwd-screen");
+};
+
+const resetPasswordByGmail = async (newPassword, confirmPassword) => {
+  const errorEl = document.getElementById("forgot-new-pwd-error");
+  const newPwdInput = document.getElementById("forgot-new-pwd");
+  const confPwdInput = document.getElementById("forgot-confirm-new-pwd");
+
   if (newPassword !== confirmPassword) {
-    errorEl.innerText = "Error! Password baru dan konfirmasi password tidak cocok.";
+    errorEl.innerText = "Error! Passwords do not match.";
     errorEl.style.display = "block";
     newPwdInput.classList.add("input-error-field");
     confPwdInput.classList.add("input-error-field");
@@ -296,47 +376,35 @@ const handleResetPassword = async (username, phone, newPassword, confirmPassword
     const res = await fetch('../server/auth.php?action=reset_password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, phone, newPassword, confirmPassword })
+      body: JSON.stringify({ email: pendingForgotGmail, newPassword, confirmPassword })
     });
     const data = await res.json();
 
     if (data.success) {
-      // Close modal and show success feedback
-      document.getElementById("reset-password-modal").classList.remove("active");
-      document.getElementById("form-reset-password").reset();
+      document.getElementById("form-forgot-gmail").reset();
+      document.getElementById("form-forgot-otp").reset();
+      document.getElementById("form-new-password").reset();
       errorEl.style.display = "none";
       newPwdInput.classList.remove("input-error-field");
       confPwdInput.classList.remove("input-error-field");
-
-      // Flash a success notice on the login page
+      pendingForgotGmail = "";
       const loginError = document.getElementById("login-error");
       loginError.style.display = "block";
       loginError.style.background = "rgba(46, 204, 113, 0.15)";
       loginError.style.borderColor = "#2ecc71";
       loginError.style.color = "#afffca";
-      loginError.innerHTML = "✓ Password berhasil direset! Silakan login dengan password baru Anda.";
-
-      // Auto-revert success notice style after 5 seconds
-      setTimeout(() => {
-        loginError.style.display = "none";
-        loginError.style.background = "";
-        loginError.style.borderColor = "";
-        loginError.style.color = "";
-        loginError.innerHTML = "Error! incorrect password or username.<br>Please enter the correct name and username.";
-      }, 5000);
+      loginError.innerHTML = "Password berhasil direset. Silakan login dengan password baru Anda.";
+      navigateTo("login-screen");
     } else {
       errorEl.innerText = data.message || "Error! Reset password gagal.";
       errorEl.style.display = "block";
-      newPwdInput.classList.remove("input-error-field");
-      confPwdInput.classList.remove("input-error-field");
     }
   } catch (err) {
-    console.error("Reset password failure", err);
+    console.error("Reset password by Gmail failure", err);
     errorEl.innerText = "Error! Gagal terhubung ke server.";
     errorEl.style.display = "block";
   }
 };
-
 // 5. CUSTOMER PAGE CONTROLLERS (CATALOG & CART)
 let activeCategoryFilter = "all";
 let searchFilterQuery = "";
@@ -734,9 +802,9 @@ const selectCategory = (category) => {
   activeCategoryFilter = category;
   
   const titleHeader = document.getElementById("category-title-header");
-  if (category === "sushi") titleHeader.innerText = "❖ JAPANESE MENU ❖";
-  else if (category === "cake") titleHeader.innerText = "❖ TOWEL CAKES ❖";
-  else if (category === "drink") titleHeader.innerText = "❖ ELIXIR DRINK ❖";
+  if (category === "sushi") titleHeader.innerText = "JAPANESE MENU";
+  else if (category === "cake") titleHeader.innerText = "TOWEL CAKES";
+  else if (category === "drink") titleHeader.innerText = "ELIXIR DRINK";
   
   document.getElementById("catalog-lobby").classList.remove("active");
   document.getElementById("catalog-products").classList.add("active");
@@ -1066,7 +1134,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         toggle.style.color = pwdInput.type === "text" ? "var(--color-primary-gold)" : "";
       });
     });
-
     const adminForm = document.getElementById("form-admin-login");
     const adminIdentifier = document.getElementById("admin-login-identifier");
     const adminPassword = document.getElementById("admin-login-password");
@@ -1163,16 +1230,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Reset Password links
   document.getElementById("link-forget-pwd").addEventListener("click", (e) => {
     e.preventDefault();
-    document.getElementById("reset-modal-error").style.display = "none";
-    document.getElementById("reset-password-modal").classList.add("active");
-  });
-
-  document.getElementById("btn-close-reset-modal").addEventListener("click", () => {
-    document.getElementById("reset-password-modal").classList.remove("active");
-  });
-
-  document.getElementById("reset-password-overlay").addEventListener("click", () => {
-    document.getElementById("reset-password-modal").classList.remove("active");
+    document.getElementById("forgot-gmail-error").style.display = "none";
+    navigateTo("forgot-pwd-screen");
   });
 
   // Clear login error state on typing
@@ -1181,6 +1240,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const loginError = document.getElementById("login-error");
 
   const clearLoginError = () => {
+    resetLoginNoticeStyle();
     loginError.style.display = "none";
     loginPass.classList.remove("input-error-field");
   };
@@ -1227,6 +1287,33 @@ document.addEventListener("DOMContentLoaded", async () => {
     handleRegister(user, phone, email, pass, conf);
   });
 
+
+  document.getElementById("form-register-otp").addEventListener("submit", (e) => {
+    e.preventDefault();
+    completeRegisterAfterOtp();
+  });
+
+  document.getElementById("form-forgot-gmail").addEventListener("submit", (e) => {
+    e.preventDefault();
+    requestForgotPasswordOtp(document.getElementById("forgot-gmail-address").value.trim());
+  });
+
+  document.getElementById("form-forgot-otp").addEventListener("submit", (e) => {
+    e.preventDefault();
+    verifyForgotOtp(document.getElementById("forgot-otp-code").value);
+  });
+
+  document.getElementById("form-new-password").addEventListener("submit", (e) => {
+    e.preventDefault();
+    resetPasswordByGmail(
+      document.getElementById("forgot-new-pwd").value,
+      document.getElementById("forgot-confirm-new-pwd").value
+    );
+  });
+
+  document.getElementById("btn-back-to-login").addEventListener("click", () => {
+    navigateTo("login-screen");
+  });
   const adminForm = document.getElementById("form-admin-login");
   if (adminForm) {
     const adminIdentifier = document.getElementById("admin-login-identifier");
@@ -1254,15 +1341,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       adminPassword.classList.remove("input-error-field");
     });
   }
-
-  document.getElementById("form-reset-password").addEventListener("submit", (e) => {
-    e.preventDefault();
-    const user = document.getElementById("reset-username").value;
-    const phone = document.getElementById("reset-phone").value;
-    const pass = document.getElementById("reset-new-password").value;
-    const conf = document.getElementById("reset-confirm-password").value;
-    handleResetPassword(user, phone, pass, conf);
-  });
 
   // Eye Toggle Password Visibility
   document.querySelectorAll(".toggle-password").forEach(toggle => {
@@ -1310,7 +1388,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     searchFilterQuery = e.target.value;
     if (searchFilterQuery.trim() !== "") {
       activeCategoryFilter = "all";
-      document.getElementById("category-title-header").innerText = "❖ Hasil Pencarian ❖";
+      document.getElementById("category-title-header").innerText = "Hasil Pencarian";
       document.getElementById("catalog-lobby").classList.remove("active");
       document.getElementById("catalog-products").classList.add("active");
       renderCustomerCatalog();
