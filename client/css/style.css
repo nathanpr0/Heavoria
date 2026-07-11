@@ -83,7 +83,7 @@ body {
 
 .btn-translucent {
   background: rgba(255, 255, 255, 0.08);
-  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  border: 1.5px solid var(--color-primary-gold);
   color: #ffffff;
   backdrop-filter: blur(4px);
   min-width: 160px;
@@ -304,7 +304,7 @@ body {
   padding: 12px 18px;
   border-radius: 25px;
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(212, 175, 55, 0.8);
+  border: 1px solid var(--color-primary-gold);
   color: #ffffff;
   font-family: var(--font-sans);
   font-size: 0.95rem;
