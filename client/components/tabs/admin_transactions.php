@@ -10,7 +10,7 @@
         <tr>
           <th>ID Transaksi</th>
           <th>Waktu</th>
-          <th>Meja</th>
+          <th>Pickup / Delivery</th>
           <th>Pesanan</th>
           <th>Pembayaran</th>
           <th>Total</th>

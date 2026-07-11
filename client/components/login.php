@@ -1,13 +1,8 @@
-<!-- 2. LOGIN SCREEN -->
+<!-- 2.0 LOGIN SCREEN -->
 <section id="login-screen" class="screen-view">
-  <!-- Background Layer -->
-  <div class="app-background"></div>
-  <div class="app-overlay"></div>
-  <!-- Background Layer -->
-
   <div class="logo-container">
     <div class="circular-logo">
-      <img src="assets/heavoria_logo.png" alt="Heavoria Logo" onerror="this.src='https://placehold.co/100x100/422/fd3?text=H'">
+      <img src="assets/heavoria_logorev.jpeg" alt="Heavoria Logo" onerror="this.src='https://placehold.co/100x100/422/fd3?text=H'">
     </div>
   </div>
 
@@ -23,7 +18,7 @@
   <div class="auth-box">
     <form id="form-login" autocomplete="off">
       <div class="input-group">
-        <input type="text" id="login-username" placeholder="Username" required>
+        <input type="text" id="login-identifier" placeholder="Gmail Address / Phone Number" required>
       </div>
       <div class="input-group password-group">
         <input type="password" id="login-password" placeholder="Enter Password" required>
@@ -36,11 +31,11 @@
       </div>
       
       <div class="error-message" id="login-error">
-        Error! incorrect password or username.<br>Please enter the correct name and username.
+        Error! Incorrect password or credentials.<br>Please enter the correct Gmail/Phone and Password.
       </div>
 
       <div class="auth-links" style="display: flex; justify-content: space-between; margin-top: 15px;">
-        <a href="#" class="auth-link" id="link-forget-pwd">Forget Password ?</a>
+        <a href="#" class="auth-link" id="link-forget-pwd">Forgot Password ?</a>
         <a href="#" class="auth-link" id="link-goto-register-from-login">Sign In / Daftar</a>
       </div>
 
@@ -53,7 +48,7 @@
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="19" y1="12" x2="5" y2="12"></line>
         <polyline points="12 19 5 12 12 5"></polyline>
-      </svg> Kembali
+      </svg> Kembali ke Lobby
     </button>
   </div>
 </section>

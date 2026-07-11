@@ -11,9 +11,10 @@
 
     <nav class="admin-nav">
       <button class="nav-item active" data-tab="admin-summary">Ringkasan</button>
-      <button class="nav-item" data-tab="admin-orders">Antrean Pesanan</button>
-      <button class="nav-item" data-tab="admin-menu">Kelola Menu</button>
-      <button class="nav-item" data-tab="admin-transactions">Riwayat Penjualan</button>
+      <button class="nav-item" data-tab="admin-orders">Verifikasi Pesanan</button>
+      <button class="nav-item" data-tab="admin-menu">Tambah/Hapus Produk</button>
+      <button class="nav-item" data-tab="admin-transactions">Laporan Penjualan</button>
+      <button class="nav-item" data-tab="admin-clients">List Client</button>
     </nav>
 
     <div class="header-actions">
@@ -37,6 +38,7 @@
     include 'tabs/admin_orders.php';
     include 'tabs/admin_menu.php';
     include 'tabs/admin_transactions.php';
+    include 'tabs/admin_clients.php';
     ?>
   </main>
 </section>

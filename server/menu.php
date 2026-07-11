@@ -11,7 +11,20 @@ $action = $_GET['action'] ?? '';
 switch ($action) {
     case 'get':
         try {
-            $stmt = $pdo->query("SELECT * FROM menu ORDER BY created_at DESC");
+            $stmt = $pdo->query("
+                SELECT *
+                FROM menu
+                ORDER BY
+                    CASE id
+                        WHEN 'nigiri' THEN 1
+                        WHEN 'sushi-roll' THEN 2
+                        WHEN 'towelcake-strawberry' THEN 3
+                        WHEN 'towelcake-mango' THEN 4
+                        WHEN 'towelcake-grape' THEN 5
+                        ELSE 99
+                    END,
+                    created_at DESC
+            ");
             $menuItems = [];
             while ($row = $stmt->fetch()) {
                 $menuItems[] = [
@@ -19,8 +32,7 @@ switch ($action) {
                     'name' => $row['name'],
                     'category' => $row['category'],
                     'price' => (int)$row['price'],
-                    // Calculate a mock original price to show discount badges, or set to null
-                    'originalPrice' => (int)($row['price'] * 1.33),
+                    'originalPrice' => null,
                     'desc' => $row['description'],
                     'image' => $row['image_url']
                 ];

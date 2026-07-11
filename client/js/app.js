@@ -13,10 +13,20 @@ let selectedFoodForModal = null;
 let currentQtyInModal = 1;
 let shouldOpenCartAfterLogin = false;
 let pendingCartItem = null;
+let pendingRegisterData = null;
+let pendingForgotGmail = "";
+const SIMULATED_OTP_CODE = "123456";
 
 let globalMenu = [];
 let globalOrders = [];
 let globalTransactions = [];
+let globalClients = [];
+let checkoutFulfillment = {
+  type: "pickup",
+  distanceKm: 0,
+  addressNote: "",
+  deliveryFee: 0
+};
 
 // API HELPER FUNCTIONS
 const fetchMenu = async () => {
@@ -46,6 +56,17 @@ const fetchTransactions = async () => {
   }
 };
 
+const fetchClients = async () => {
+  try {
+    const res = await fetch('../server/auth.php?action=clients');
+    const data = await res.json();
+    globalClients = data.success ? data.clients : [];
+  } catch (err) {
+    console.error("Failed to load clients", err);
+    globalClients = [];
+  }
+};
+
 const checkSession = async () => {
   try {
     const res = await fetch('../server/auth.php?action=session');
@@ -64,6 +85,13 @@ const checkSession = async () => {
 const getMenu = () => globalMenu;
 const getOrders = () => globalOrders;
 
+const resetLoginNoticeStyle = () => {
+  const loginError = document.getElementById("login-error");
+  if (!loginError) return;
+  loginError.style.background = "";
+  loginError.style.borderColor = "";
+  loginError.style.color = "";
+};
 // 3. UI HELPER FUNCTIONS
 const formatRupiah = (number) => {
   return new Intl.NumberFormat("id-ID", {
@@ -118,10 +146,12 @@ const navigateTo = async (screenId) => {
   } else if (screenId === "admin-dashboard") {
     await fetchOrders();
     await fetchTransactions();
+    await fetchClients();
     await updateAdminStats();
     renderAdminOrders();
     renderAdminMenuTable();
     renderAdminTransactions();
+    renderAdminClients();
   }
 };
 
@@ -129,6 +159,7 @@ const navigateTo = async (screenId) => {
 const handleLogin = async (username, password) => {
   const errorEl = document.getElementById("login-error");
   const pwdInput = document.getElementById("login-password");
+  resetLoginNoticeStyle();
 
   try {
     const res = await fetch('../server/auth.php?action=login', {
@@ -178,12 +209,12 @@ const handleLogin = async (username, password) => {
   }
 };
 
-const handleRegister = async (username, phone, password, confirmPassword) => {
+const handleRegister = async (username, phone, email, password, confirmPassword) => {
   const errorEl = document.getElementById("reg-error");
   const pwdInput = document.getElementById("reg-password");
   const confInput = document.getElementById("reg-confirm-password");
-  
-  // Validation password match
+  const emailInput = document.getElementById("reg-email");
+
   if (password !== confirmPassword) {
     errorEl.innerText = "Error! The passwords do not match";
     errorEl.style.display = "block";
@@ -192,42 +223,67 @@ const handleRegister = async (username, phone, password, confirmPassword) => {
     return;
   }
 
+  if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
+    errorEl.innerText = "Error! Gmail Address tidak valid.";
+    errorEl.style.display = "block";
+    emailInput.classList.add("input-error-field");
+    return;
+  }
+
   errorEl.style.display = "none";
   pwdInput.classList.remove("input-error-field");
   confInput.classList.remove("input-error-field");
-  
+  emailInput.classList.remove("input-error-field");
+
+  pendingRegisterData = { username, phone, email, password };
+  document.getElementById("reg-otp-error").style.display = "none";
+  document.getElementById("reg-otp-code").value = "";
+  document.getElementById("otp-reg-subtitle").innerText = `Kode verifikasi dikirim ke ${email}`;
+  navigateTo("register-otp-screen");
+};
+
+const completeRegisterAfterOtp = async () => {
+  const errorEl = document.getElementById("reg-otp-error");
+  const codeInput = document.getElementById("reg-otp-code");
+
+  if (codeInput.value.trim() !== SIMULATED_OTP_CODE) {
+    errorEl.innerText = "Error! Invalid verification code.";
+    errorEl.style.display = "block";
+    codeInput.classList.add("input-error-field");
+    return;
+  }
+
+  if (!pendingRegisterData) {
+    errorEl.innerText = "Data registrasi tidak ditemukan. Silakan isi form daftar ulang.";
+    errorEl.style.display = "block";
+    return;
+  }
+
+  errorEl.style.display = "none";
+  codeInput.classList.remove("input-error-field");
+
   try {
     const res = await fetch('../server/auth.php?action=register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, phone, password })
+      body: JSON.stringify(pendingRegisterData)
     });
     const data = await res.json();
 
     if (data.success) {
-      currentUser = data.user;
-      navigateTo("customer-dashboard");
-      if (pendingCartItem) {
-        const itemToAdd = pendingCartItem;
-        pendingCartItem = null;
-        addToCart(itemToAdd.item, itemToAdd.qty, itemToAdd.notes);
-        setTimeout(() => {
-          renderCartDrawer();
-          document.getElementById("cart-drawer").classList.add("active");
-        }, 100);
-      } else if (shouldOpenCartAfterLogin) {
-        shouldOpenCartAfterLogin = false;
-        setTimeout(() => {
-          renderCartDrawer();
-          document.getElementById("cart-drawer").classList.add("active");
-        }, 100);
-      }
+      pendingRegisterData = null;
       document.getElementById("form-register").reset();
+      document.getElementById("form-register-otp").reset();
+      const loginError = document.getElementById("login-error");
+      loginError.style.display = "block";
+      loginError.style.background = "rgba(46, 204, 113, 0.15)";
+      loginError.style.borderColor = "#2ecc71";
+      loginError.style.color = "#afffca";
+      loginError.innerHTML = "Akun berhasil dibuat. Silakan login dengan Gmail/nomor telepon Anda.";
+      navigateTo("login-screen");
     } else {
       errorEl.innerText = data.message || "Error! Gagal registrasi.";
       errorEl.style.display = "block";
-      pwdInput.classList.add("input-error-field");
-      confInput.classList.add("input-error-field");
     }
   } catch (err) {
     console.error("Register failure", err);
@@ -235,7 +291,6 @@ const handleRegister = async (username, phone, password, confirmPassword) => {
     errorEl.style.display = "block";
   }
 };
-
 const handleLogout = async () => {
   try {
     await fetch('../server/auth.php?action=logout');
@@ -249,15 +304,68 @@ const handleLogout = async () => {
   navigateTo("customer-dashboard");
 };
 
-// Handle Reset Password
-const handleResetPassword = async (username, phone, newPassword, confirmPassword) => {
-  const errorEl = document.getElementById("reset-modal-error");
-  const newPwdInput = document.getElementById("reset-new-password");
-  const confPwdInput = document.getElementById("reset-confirm-password");
+const requestForgotPasswordOtp = async (email) => {
+  const errorEl = document.getElementById("forgot-gmail-error");
+  const emailInput = document.getElementById("forgot-gmail-address");
 
-  // Validation: password match
+  if (!/^[^\s@]+@gmail\.com$/i.test(email)) {
+    errorEl.innerText = "Error! Invalid Gmail Address.";
+    errorEl.style.display = "block";
+    emailInput.classList.add("input-error-field");
+    return;
+  }
+
+  try {
+    const res = await fetch('../server/auth.php?action=check_gmail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      pendingForgotGmail = email;
+      errorEl.style.display = "none";
+      emailInput.classList.remove("input-error-field");
+      document.getElementById("forgot-otp-code").value = "";
+      document.getElementById("forgot-otp-error").style.display = "none";
+      document.getElementById("otp-forgot-subtitle").innerText = `Kode verifikasi dikirim ke ${email}`;
+      navigateTo("forgot-otp-screen");
+    } else {
+      errorEl.innerText = data.message || "Error! Gmail address tidak valid.";
+      errorEl.style.display = "block";
+      emailInput.classList.add("input-error-field");
+    }
+  } catch (err) {
+    console.error("Forgot Gmail failure", err);
+    errorEl.innerText = "Error! Gagal terhubung ke server.";
+    errorEl.style.display = "block";
+  }
+};
+
+const verifyForgotOtp = (code) => {
+  const errorEl = document.getElementById("forgot-otp-error");
+  const codeInput = document.getElementById("forgot-otp-code");
+
+  if (code.trim() !== SIMULATED_OTP_CODE) {
+    errorEl.innerText = "Error! Invalid verification code.";
+    errorEl.style.display = "block";
+    codeInput.classList.add("input-error-field");
+    return;
+  }
+
+  errorEl.style.display = "none";
+  codeInput.classList.remove("input-error-field");
+  navigateTo("forgot-new-pwd-screen");
+};
+
+const resetPasswordByGmail = async (newPassword, confirmPassword) => {
+  const errorEl = document.getElementById("forgot-new-pwd-error");
+  const newPwdInput = document.getElementById("forgot-new-pwd");
+  const confPwdInput = document.getElementById("forgot-confirm-new-pwd");
+
   if (newPassword !== confirmPassword) {
-    errorEl.innerText = "Error! Password baru dan konfirmasi password tidak cocok.";
+    errorEl.innerText = "Error! Passwords do not match.";
     errorEl.style.display = "block";
     newPwdInput.classList.add("input-error-field");
     confPwdInput.classList.add("input-error-field");
@@ -268,47 +376,35 @@ const handleResetPassword = async (username, phone, newPassword, confirmPassword
     const res = await fetch('../server/auth.php?action=reset_password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, phone, newPassword, confirmPassword })
+      body: JSON.stringify({ email: pendingForgotGmail, newPassword, confirmPassword })
     });
     const data = await res.json();
 
     if (data.success) {
-      // Close modal and show success feedback
-      document.getElementById("reset-password-modal").classList.remove("active");
-      document.getElementById("form-reset-password").reset();
+      document.getElementById("form-forgot-gmail").reset();
+      document.getElementById("form-forgot-otp").reset();
+      document.getElementById("form-new-password").reset();
       errorEl.style.display = "none";
       newPwdInput.classList.remove("input-error-field");
       confPwdInput.classList.remove("input-error-field");
-
-      // Flash a success notice on the login page
+      pendingForgotGmail = "";
       const loginError = document.getElementById("login-error");
       loginError.style.display = "block";
       loginError.style.background = "rgba(46, 204, 113, 0.15)";
       loginError.style.borderColor = "#2ecc71";
       loginError.style.color = "#afffca";
-      loginError.innerHTML = "✓ Password berhasil direset! Silakan login dengan password baru Anda.";
-
-      // Auto-revert success notice style after 5 seconds
-      setTimeout(() => {
-        loginError.style.display = "none";
-        loginError.style.background = "";
-        loginError.style.borderColor = "";
-        loginError.style.color = "";
-        loginError.innerHTML = "Error! incorrect password or username.<br>Please enter the correct name and username.";
-      }, 5000);
+      loginError.innerHTML = "Password berhasil direset. Silakan login dengan password baru Anda.";
+      navigateTo("login-screen");
     } else {
       errorEl.innerText = data.message || "Error! Reset password gagal.";
       errorEl.style.display = "block";
-      newPwdInput.classList.remove("input-error-field");
-      confPwdInput.classList.remove("input-error-field");
     }
   } catch (err) {
-    console.error("Reset password failure", err);
+    console.error("Reset password by Gmail failure", err);
     errorEl.innerText = "Error! Gagal terhubung ke server.";
     errorEl.style.display = "block";
   }
 };
-
 // 5. CUSTOMER PAGE CONTROLLERS (CATALOG & CART)
 let activeCategoryFilter = "all";
 let searchFilterQuery = "";
@@ -505,46 +601,57 @@ const renderCartDrawer = () => {
 };
 
 const updateCartTotals = (subtotal) => {
-  const tax = subtotal * 0.1;
-  const service = subtotal * 0.05;
-  const total = subtotal + tax + service;
+  const total = subtotal + checkoutFulfillment.deliveryFee;
 
   document.getElementById("cart-subtotal").innerText = formatRupiah(subtotal);
-  document.getElementById("cart-tax").innerText = formatRupiah(tax);
-  document.getElementById("cart-service").innerText = formatRupiah(service);
+  document.getElementById("cart-shipping").innerText = formatRupiah(checkoutFulfillment.deliveryFee);
+  document.getElementById("cart-order-type").innerText = checkoutFulfillment.type === "delivery" ? "Delivery" : "Pick Up UBD";
   document.getElementById("cart-total").innerText = formatRupiah(total);
+};
+
+const getCartSubtotal = () => activeCart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+
+const updatePreorderSummary = () => {
+  const distanceInput = document.getElementById("delivery-distance");
+  const addressInput = document.getElementById("preorder-address");
+  checkoutFulfillment.distanceKm = checkoutFulfillment.type === "delivery"
+    ? Math.max(1, parseFloat(distanceInput.value || "1"))
+    : 0;
+  checkoutFulfillment.deliveryFee = checkoutFulfillment.type === "delivery"
+    ? Math.ceil(checkoutFulfillment.distanceKm * 4000)
+    : 0;
+  checkoutFulfillment.addressNote = addressInput ? addressInput.value.trim() : "";
+
+  const subtotal = getCartSubtotal();
+  document.getElementById("display-map-distance").innerText = checkoutFulfillment.distanceKm || 0;
+  document.getElementById("pre-subtotal").innerText = formatRupiah(subtotal);
+  document.getElementById("pre-shipping").innerText = formatRupiah(checkoutFulfillment.deliveryFee);
+  document.getElementById("pre-grandtotal").innerText = formatRupiah(subtotal + checkoutFulfillment.deliveryFee);
+  updateCartTotals(subtotal);
+};
+
+const setFulfillmentType = (type) => {
+  checkoutFulfillment.type = type;
+  document.getElementById("tab-type-pickup").classList.toggle("active", type === "pickup");
+  document.getElementById("tab-type-delivery").classList.toggle("active", type === "delivery");
+  document.getElementById("pickup-details-pane").classList.toggle("active", type === "pickup");
+  document.getElementById("delivery-details-pane").classList.toggle("active", type === "delivery");
+  updatePreorderSummary();
 };
 
 // Order Flow & Payment
 const handleCheckout = () => {
-  const tableInput = document.getElementById("cart-table-number");
-  if (!tableInput.value) {
-    alert("Silakan masukkan Nomor Meja terlebih dahulu!");
-    tableInput.focus();
-    return;
-  }
-
   if (activeCart.length === 0) {
     alert("Keranjang belanja kosong!");
     return;
   }
 
-  // Calculate totals
-  const subtotal = activeCart.reduce((acc, item) => acc + (item.price * item.qty), 0);
-  const tax = subtotal * 0.1;
-  const service = subtotal * 0.05;
-  const grandTotal = subtotal + tax + service;
-
-  // Set cash notice inside modal
-  document.getElementById("cash-payment-amount").innerText = formatRupiah(grandTotal);
-
-  // Close cart drawer & open payment modal
+  updatePreorderSummary();
   document.getElementById("cart-drawer").classList.remove("active");
-  document.getElementById("payment-modal").classList.add("active");
+  document.getElementById("preorder-modal").classList.add("active");
 };
 
 const processPayment = async () => {
-  const tableNum = document.getElementById("cart-table-number").value;
   const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
 
   try {
@@ -552,9 +659,11 @@ const processPayment = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        table: tableNum,
         items: activeCart,
-        method: paymentMethod
+        method: paymentMethod,
+        fulfillmentType: checkoutFulfillment.type,
+        distanceKm: checkoutFulfillment.distanceKm,
+        addressNote: checkoutFulfillment.addressNote
       })
     });
     const data = await res.json();
@@ -570,10 +679,11 @@ const processPayment = async () => {
       activeCart = [];
       updateCartBadge();
       renderCartDrawer();
-      document.getElementById("cart-table-number").value = "";
+      document.getElementById("preorder-address").value = "";
 
       // Fetch fresh orders
       await fetchOrders();
+      renderCustomerOrders();
     } else {
       alert("Checkout gagal: " + data.message);
     }
@@ -586,7 +696,10 @@ const processPayment = async () => {
 const showDigitalReceipt = (order) => {
   document.getElementById("rec-order-id").innerText = order.id;
   document.getElementById("rec-date").innerText = new Date(order.date).toLocaleString("id-ID");
-  document.getElementById("rec-table").innerText = order.table;
+  document.getElementById("rec-fulfillment").innerText = order.fulfillmentType === "delivery"
+    ? `Delivery (${order.distanceKm} km)`
+    : "Pick Up UBD";
+  document.getElementById("rec-pickup-date").innerText = order.pickupDate || "Menunggu admin";
   document.getElementById("rec-method").innerText = order.method;
 
   const itemsContainer = document.getElementById("rec-items-container");
@@ -606,8 +719,7 @@ const showDigitalReceipt = (order) => {
   });
 
   document.getElementById("rec-subtotal").innerText = formatRupiah(order.subtotal);
-  document.getElementById("rec-tax").innerText = formatRupiah(order.tax);
-  document.getElementById("rec-service").innerText = formatRupiah(order.service);
+  document.getElementById("rec-shipping").innerText = formatRupiah(order.deliveryFee || 0);
   document.getElementById("rec-total").innerText = formatRupiah(order.total);
 
   document.getElementById("receipt-modal").classList.add("active");
@@ -633,14 +745,24 @@ const renderCustomerOrders = () => {
     card.className = "order-card";
     
     let statusClass = "status-pending";
-    let statusLabel = "Menunggu Antrean (Pending)";
-    if (order.status === "Diproses") {
+    if (order.status === "Dikonfirmasi" || order.status === "Siap Diambil") {
       statusClass = "status-cooking";
-      statusLabel = "Sedang Dimasak (Diproses)";
     } else if (order.status === "Selesai") {
       statusClass = "status-completed";
-      statusLabel = "Selesai Disajikan";
     }
+
+    const statusSteps = [
+      { key: "Menunggu Verifikasi", label: "Waiting Verification" },
+      { key: "Dikonfirmasi", label: "Confirmed" },
+      { key: "Siap Diambil", label: "Order Is Ready" },
+      { key: "Selesai", label: "Completed" }
+    ];
+    const countersHtml = statusSteps.map(step => `
+      <div class="status-counter">
+        <span>${step.label}</span>
+        <strong>${order.status === step.key ? 1 : 0}</strong>
+      </div>
+    `).join("");
 
     const itemsSummaryList = order.items.map(it => `${it.name} (x${it.qty})`).join(", ");
 
@@ -648,14 +770,17 @@ const renderCustomerOrders = () => {
       <div class="order-card-header">
         <div>
           <span class="order-id-label">${order.id}</span>
-          <span class="order-time-label"> - Meja ${order.table} | ${new Date(order.date).toLocaleTimeString("id-ID")}</span>
+          <span class="order-time-label"> - ${order.fulfillmentType === "delivery" ? "Delivery" : "Pick Up UBD"} | ${new Date(order.date).toLocaleTimeString("id-ID")}</span>
         </div>
-        <span class="status-badge ${statusClass}">${statusLabel}</span>
+        <span class="status-badge ${statusClass}">${order.status}</span>
       </div>
+      <div class="order-status-grid">${countersHtml}</div>
       <div class="order-card-body">
         <div class="order-items-summary">
           <p><strong>Pesanan:</strong> ${itemsSummaryList}</p>
           <p><strong>Metode Bayar:</strong> ${order.method}</p>
+          <p><strong>Tanggal Pengambilan:</strong> ${order.pickupDate || "Menunggu admin"}</p>
+          ${order.rejectionReason ? `<p><strong>Alasan Ditolak:</strong> ${order.rejectionReason}</p>` : ""}
           <button class="btn-view-receipt" data-id="${order.id}">Lihat Struk</button>
         </div>
         <div class="order-total-price text-gold">
@@ -677,9 +802,9 @@ const selectCategory = (category) => {
   activeCategoryFilter = category;
   
   const titleHeader = document.getElementById("category-title-header");
-  if (category === "sushi") titleHeader.innerText = "❖ JAPANESE MENU ❖";
-  else if (category === "cake") titleHeader.innerText = "❖ TOWEL CAKES ❖";
-  else if (category === "drink") titleHeader.innerText = "❖ ELIXIR DRINK ❖";
+  if (category === "sushi") titleHeader.innerText = "JAPANESE MENU";
+  else if (category === "cake") titleHeader.innerText = "TOWEL CAKES";
+  else if (category === "drink") titleHeader.innerText = "ELIXIR DRINK";
   
   document.getElementById("catalog-lobby").classList.remove("active");
   document.getElementById("catalog-products").classList.add("active");
@@ -714,9 +839,9 @@ const renderAdminCategoryChart = (categoryTotals) => {
   const maxVal = Math.max(categoryTotals.sushi, categoryTotals.cake, categoryTotals.drink, 1);
 
   const categories = [
-    { key: "sushi", label: "Sushi & Roll" },
-    { key: "cake", label: "Kue & Desserts" },
-    { key: "drink", label: "Minuman Mewah" }
+    { key: "sushi", label: "Japanese Menu" },
+    { key: "cake", label: "Towel Cake" },
+    { key: "drink", label: "Elixir Drink" }
   ];
 
   categories.forEach(cat => {
@@ -743,7 +868,7 @@ const renderAdminOrders = () => {
   const orders = getOrders();
   
   const filteredOrders = orders.filter(o => {
-    if (activeAdminStatusFilter === "all") return o.status !== "Selesai";
+    if (activeAdminStatusFilter === "all") return o.status !== "Selesai" && o.status !== "Ditolak";
     return o.status === activeAdminStatusFilter;
   });
 
@@ -757,44 +882,58 @@ const renderAdminOrders = () => {
     row.className = "admin-order-row";
 
     let actionBtnHtml = "";
-    if (order.status === "Pending") {
-      actionBtnHtml = `<button class="btn-action-status btn-action-cook" data-id="${order.id}">Mulai Masak</button>`;
-    } else if (order.status === "Diproses") {
-      actionBtnHtml = `<button class="btn-action-status btn-action-complete" data-id="${order.id}">Sajikan / Selesai</button>`;
+    if (order.status === "Menunggu Verifikasi") {
+      actionBtnHtml = `
+        <button class="btn-action-status btn-action-cook" data-id="${order.id}" data-next-status="Dikonfirmasi">Confirm</button>
+        <button class="btn-action-status btn-action-reject" data-id="${order.id}" data-next-status="Ditolak">Tolak</button>
+      `;
+    } else if (order.status === "Dikonfirmasi") {
+      actionBtnHtml = `<button class="btn-action-status btn-action-cook" data-id="${order.id}" data-next-status="Siap Diambil">Tandai Siap</button>`;
+    } else if (order.status === "Siap Diambil") {
+      actionBtnHtml = `<button class="btn-action-status btn-action-complete" data-id="${order.id}" data-next-status="Selesai">Complete</button>`;
     }
 
     const itemsText = order.items.map(it => `${it.name} [x${it.qty}] ${it.notes ? `(Note: "${it.notes}")` : ""}`).join(", ");
+    const deliveryText = order.fulfillmentType === "delivery"
+      ? `Delivery ${order.distanceKm} km (${formatRupiah(order.deliveryFee || 0)})`
+      : "Pick Up UBD (Free)";
 
     row.innerHTML = `
       <div class="order-meta-info">
-        <span class="order-id-label">${order.id} | Meja ${order.table}</span>
-        <span class="order-time-label">Waktu: ${new Date(order.date).toLocaleTimeString("id-ID")} | Metode: ${order.method}</span>
+        <span class="order-id-label">${order.id} | ${order.username}</span>
+        <span class="order-time-label">Waktu: ${new Date(order.date).toLocaleTimeString("id-ID")} | ${deliveryText} | Metode: ${order.method}</span>
         <p class="order-items-detail-text"><strong>Rincian:</strong> ${itemsText}</p>
+        <p class="order-items-detail-text"><strong>Catatan:</strong> ${order.addressNote || "-"}</p>
+        ${order.pickupDate ? `<p class="order-items-detail-text"><strong>Tanggal Pengambilan:</strong> ${order.pickupDate}</p>` : ""}
       </div>
       <div class="order-row-actions">
-        <span class="status-badge ${order.status === "Pending" ? "status-pending" : "status-cooking"}">${order.status}</span>
+        <span class="status-badge ${order.status === "Menunggu Verifikasi" ? "status-pending" : "status-cooking"}">${order.status}</span>
         ${actionBtnHtml}
       </div>
     `;
 
     // Action button listeners
-    const actionBtn = row.querySelector(".btn-action-status");
-    if (actionBtn) {
+    row.querySelectorAll(".btn-action-status").forEach(actionBtn => {
       actionBtn.addEventListener("click", () => {
-        updateOrderStatus(order.id);
+        let reason = "";
+        const nextStatus = actionBtn.getAttribute("data-next-status");
+        if (nextStatus === "Ditolak") {
+          reason = prompt("Masukkan alasan penolakan pesanan:") || "Pesanan ditolak admin.";
+        }
+        updateOrderStatus(order.id, nextStatus, reason);
       });
-    }
+    });
 
     container.appendChild(row);
   });
 };
 
-const updateOrderStatus = async (orderId) => {
+const updateOrderStatus = async (orderId, status = "", reason = "") => {
   try {
     const res = await fetch('../server/orders.php?action=update_status', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: orderId })
+      body: JSON.stringify({ id: orderId, status, reason })
     });
     const data = await res.json();
 
@@ -804,6 +943,7 @@ const updateOrderStatus = async (orderId) => {
       await updateAdminStats();
       renderAdminOrders();
       renderAdminTransactions();
+      renderAdminClients();
     } else {
       alert("Gagal memperbarui status order: " + data.message);
     }
@@ -934,10 +1074,32 @@ const renderAdminTransactions = () => {
     tr.innerHTML = `
       <td><span class="order-id-label">${order.id}</span></td>
       <td style="font-size:0.8rem; color:#aaa;">${new Date(order.date).toLocaleString("id-ID")}</td>
-      <td><strong>Meja ${order.table}</strong></td>
+      <td><strong>${order.fulfillmentType === "delivery" ? "Delivery" : "Pick Up UBD"}</strong></td>
       <td style="font-size:0.85rem; max-width: 300px;">${itemNames}</td>
       <td><span class="status-badge status-completed">${order.method}</span></td>
       <td><strong class="text-gold">${formatRupiah(order.total)}</strong></td>
+    `;
+    tbody.appendChild(tr);
+  });
+};
+
+const renderAdminClients = () => {
+  const tbody = document.getElementById("admin-clients-table-body");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+  if (globalClients.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" class="cart-empty-text" style="text-align:center;">Belum ada client terdaftar.</td></tr>`;
+    return;
+  }
+
+  globalClients.forEach(client => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><strong>${client.username}</strong></td>
+      <td>${client.email || "-"}</td>
+      <td>${client.phone || "-"}</td>
+      <td><span class="status-badge ${client.status === "Online" ? "status-completed" : "status-pending"}">${client.status}</span></td>
     `;
     tbody.appendChild(tr);
   });
@@ -952,11 +1114,75 @@ document.addEventListener("DOMContentLoaded", async () => {
   await fetchMenu();
 
   // If user session is already logged in, navigate
+  const isAdminApp = !!document.getElementById("admin-login-screen") && !document.getElementById("login-screen");
+
   if (currentUser && currentUser.role === "admin") {
     navigateTo("admin-dashboard");
+  } else if (isAdminApp) {
+    navigateTo("admin-login-screen");
   } else {
     // Default to customer dashboard for Guests and regular Users on startup
     navigateTo("customer-dashboard");
+  }
+
+  if (isAdminApp) {
+    document.querySelectorAll(".toggle-password").forEach(toggle => {
+      toggle.addEventListener("click", () => {
+        const targetId = toggle.getAttribute("data-target");
+        const pwdInput = document.getElementById(targetId);
+        pwdInput.type = pwdInput.type === "password" ? "text" : "password";
+        toggle.style.color = pwdInput.type === "text" ? "var(--color-primary-gold)" : "";
+      });
+    });
+    const adminForm = document.getElementById("form-admin-login");
+    const adminIdentifier = document.getElementById("admin-login-identifier");
+    const adminPassword = document.getElementById("admin-login-password");
+    const adminError = document.getElementById("admin-login-error");
+
+    adminForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      await handleLogin(adminIdentifier.value, adminPassword.value);
+      if (!currentUser || currentUser.role !== "admin") {
+        adminError.style.display = "block";
+        adminPassword.classList.add("input-error-field");
+      }
+    });
+
+    document.querySelectorAll(".admin-nav .nav-item").forEach(item => {
+      item.addEventListener("click", () => {
+        document.querySelectorAll(".admin-nav .nav-item").forEach(nav => nav.classList.remove("active"));
+        item.classList.add("active");
+        const tabId = item.getAttribute("data-tab");
+        document.querySelectorAll("#admin-dashboard .tab-pane").forEach(pane => pane.classList.remove("active"));
+        document.getElementById("tab-" + tabId).classList.add("active");
+      });
+    });
+
+    document.querySelectorAll(".status-filter-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".status-filter-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        activeAdminStatusFilter = btn.getAttribute("data-status-filter");
+        renderAdminOrders();
+      });
+    });
+
+    document.getElementById("btn-add-menu-modal").addEventListener("click", () => openMenuCrudModal());
+    document.getElementById("btn-close-menu-crud").addEventListener("click", () => document.getElementById("menu-crud-modal").classList.remove("active"));
+    document.getElementById("menu-crud-overlay").addEventListener("click", () => document.getElementById("menu-crud-modal").classList.remove("active"));
+    document.getElementById("form-menu-crud").addEventListener("submit", (e) => {
+      e.preventDefault();
+      saveMenuItem({
+        id: document.getElementById("crud-item-id").value,
+        name: document.getElementById("crud-item-name").value,
+        category: document.getElementById("crud-item-category").value,
+        price: parseInt(document.getElementById("crud-item-price").value, 10),
+        desc: document.getElementById("crud-item-desc").value,
+        image: document.getElementById("crud-item-image").value
+      });
+    });
+
+    return;
   }
 
   // 7.1 Router Navigation Listeners
@@ -1004,24 +1230,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Reset Password links
   document.getElementById("link-forget-pwd").addEventListener("click", (e) => {
     e.preventDefault();
-    document.getElementById("reset-modal-error").style.display = "none";
-    document.getElementById("reset-password-modal").classList.add("active");
-  });
-
-  document.getElementById("btn-close-reset-modal").addEventListener("click", () => {
-    document.getElementById("reset-password-modal").classList.remove("active");
-  });
-
-  document.getElementById("reset-password-overlay").addEventListener("click", () => {
-    document.getElementById("reset-password-modal").classList.remove("active");
+    document.getElementById("forgot-gmail-error").style.display = "none";
+    navigateTo("forgot-pwd-screen");
   });
 
   // Clear login error state on typing
-  const loginUser = document.getElementById("login-username");
+  const loginUser = document.getElementById("login-identifier");
   const loginPass = document.getElementById("login-password");
   const loginError = document.getElementById("login-error");
 
   const clearLoginError = () => {
+    resetLoginNoticeStyle();
     loginError.style.display = "none";
     loginPass.classList.remove("input-error-field");
   };
@@ -1032,6 +1251,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Clear register error state on typing
   const regUser = document.getElementById("reg-username");
   const regPhone = document.getElementById("reg-phone");
+  const regEmail = document.getElementById("reg-email");
   const regPass = document.getElementById("reg-password");
   const regConf = document.getElementById("reg-confirm-password");
   const regError = document.getElementById("reg-error");
@@ -1040,10 +1260,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     regError.style.display = "none";
     regPass.classList.remove("input-error-field");
     regConf.classList.remove("input-error-field");
+    regEmail.classList.remove("input-error-field");
   };
 
   regUser.addEventListener("input", clearRegisterError);
   regPhone.addEventListener("input", clearRegisterError);
+  regEmail.addEventListener("input", clearRegisterError);
   regPass.addEventListener("input", clearRegisterError);
   regConf.addEventListener("input", clearRegisterError);
 
@@ -1059,19 +1281,66 @@ document.addEventListener("DOMContentLoaded", async () => {
     e.preventDefault();
     const user = regUser.value;
     const phone = regPhone.value;
+    const email = regEmail.value;
     const pass = regPass.value;
     const conf = regConf.value;
-    handleRegister(user, phone, pass, conf);
+    handleRegister(user, phone, email, pass, conf);
   });
 
-  document.getElementById("form-reset-password").addEventListener("submit", (e) => {
+
+  document.getElementById("form-register-otp").addEventListener("submit", (e) => {
     e.preventDefault();
-    const user = document.getElementById("reset-username").value;
-    const phone = document.getElementById("reset-phone").value;
-    const pass = document.getElementById("reset-new-password").value;
-    const conf = document.getElementById("reset-confirm-password").value;
-    handleResetPassword(user, phone, pass, conf);
+    completeRegisterAfterOtp();
   });
+
+  document.getElementById("form-forgot-gmail").addEventListener("submit", (e) => {
+    e.preventDefault();
+    requestForgotPasswordOtp(document.getElementById("forgot-gmail-address").value.trim());
+  });
+
+  document.getElementById("form-forgot-otp").addEventListener("submit", (e) => {
+    e.preventDefault();
+    verifyForgotOtp(document.getElementById("forgot-otp-code").value);
+  });
+
+  document.getElementById("form-new-password").addEventListener("submit", (e) => {
+    e.preventDefault();
+    resetPasswordByGmail(
+      document.getElementById("forgot-new-pwd").value,
+      document.getElementById("forgot-confirm-new-pwd").value
+    );
+  });
+
+  document.getElementById("btn-back-to-login").addEventListener("click", () => {
+    navigateTo("login-screen");
+  });
+  const adminForm = document.getElementById("form-admin-login");
+  if (adminForm) {
+    const adminIdentifier = document.getElementById("admin-login-identifier");
+    const adminPassword = document.getElementById("admin-login-password");
+    const adminError = document.getElementById("admin-login-error");
+
+    adminForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      await handleLogin(adminIdentifier.value, adminPassword.value);
+      if (!currentUser || currentUser.role !== "admin") {
+        adminError.style.display = "block";
+        adminPassword.classList.add("input-error-field");
+      } else {
+        adminError.style.display = "none";
+        adminPassword.classList.remove("input-error-field");
+      }
+    });
+
+    adminIdentifier.addEventListener("input", () => {
+      adminError.style.display = "none";
+      adminPassword.classList.remove("input-error-field");
+    });
+    adminPassword.addEventListener("input", () => {
+      adminError.style.display = "none";
+      adminPassword.classList.remove("input-error-field");
+    });
+  }
 
   // Eye Toggle Password Visibility
   document.querySelectorAll(".toggle-password").forEach(toggle => {
@@ -1119,7 +1388,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     searchFilterQuery = e.target.value;
     if (searchFilterQuery.trim() !== "") {
       activeCategoryFilter = "all";
-      document.getElementById("category-title-header").innerText = "❖ Hasil Pencarian ❖";
+      document.getElementById("category-title-header").innerText = "Hasil Pencarian";
       document.getElementById("catalog-lobby").classList.remove("active");
       document.getElementById("catalog-products").classList.add("active");
       renderCustomerCatalog();
@@ -1197,6 +1466,28 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Checkout flows
   document.getElementById("btn-checkout").addEventListener("click", handleCheckout);
 
+  document.getElementById("tab-type-pickup").addEventListener("click", () => setFulfillmentType("pickup"));
+  document.getElementById("tab-type-delivery").addEventListener("click", () => setFulfillmentType("delivery"));
+  document.getElementById("delivery-distance").addEventListener("input", updatePreorderSummary);
+  document.getElementById("preorder-address").addEventListener("input", updatePreorderSummary);
+  document.getElementById("btn-close-preorder").addEventListener("click", () => {
+    document.getElementById("preorder-modal").classList.remove("active");
+  });
+  document.getElementById("preorder-modal-overlay").addEventListener("click", () => {
+    document.getElementById("preorder-modal").classList.remove("active");
+  });
+  document.getElementById("btn-preorder-proceed").addEventListener("click", () => {
+    updatePreorderSummary();
+    if (checkoutFulfillment.type === "delivery" && !checkoutFulfillment.addressNote) {
+      alert("Silakan isi alamat delivery terlebih dahulu.");
+      document.getElementById("preorder-address").focus();
+      return;
+    }
+    document.getElementById("cash-payment-amount").innerText = formatRupiah(getCartSubtotal() + checkoutFulfillment.deliveryFee);
+    document.getElementById("preorder-modal").classList.remove("active");
+    document.getElementById("payment-modal").classList.add("active");
+  });
+
   // Close payment modal
   document.getElementById("btn-close-payment").addEventListener("click", () => {
     document.getElementById("payment-modal").classList.remove("active");
@@ -1255,29 +1546,31 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  // Admin CRUD Modal Trigger
-  document.getElementById("btn-add-menu-modal").addEventListener("click", () => {
-    openMenuCrudModal();
-  });
+  if (document.getElementById("btn-add-menu-modal")) {
+    // Admin CRUD Modal Trigger
+    document.getElementById("btn-add-menu-modal").addEventListener("click", () => {
+      openMenuCrudModal();
+    });
 
-  document.getElementById("btn-close-menu-crud").addEventListener("click", () => {
-    document.getElementById("menu-crud-modal").classList.remove("active");
-  });
-  document.getElementById("menu-crud-overlay").addEventListener("click", () => {
-    document.getElementById("menu-crud-modal").classList.remove("active");
-  });
+    document.getElementById("btn-close-menu-crud").addEventListener("click", () => {
+      document.getElementById("menu-crud-modal").classList.remove("active");
+    });
+    document.getElementById("menu-crud-overlay").addEventListener("click", () => {
+      document.getElementById("menu-crud-modal").classList.remove("active");
+    });
 
-  // CRUD Menu Submit
-  document.getElementById("form-menu-crud").addEventListener("submit", (e) => {
-    e.preventDefault();
-    const id = document.getElementById("crud-item-id").value;
-    const name = document.getElementById("crud-item-name").value;
-    const category = document.getElementById("crud-item-category").value;
-    const price = parseInt(document.getElementById("crud-item-price").value, 10);
-    const desc = document.getElementById("crud-item-desc").value;
-    const image = document.getElementById("crud-item-image").value;
+    // CRUD Menu Submit
+    document.getElementById("form-menu-crud").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const id = document.getElementById("crud-item-id").value;
+      const name = document.getElementById("crud-item-name").value;
+      const category = document.getElementById("crud-item-category").value;
+      const price = parseInt(document.getElementById("crud-item-price").value, 10);
+      const desc = document.getElementById("crud-item-desc").value;
+      const image = document.getElementById("crud-item-image").value;
 
-    saveMenuItem({ id, name, category, price, desc, image });
-  });
+      saveMenuItem({ id, name, category, price, desc, image });
+    });
+  }
 
 });

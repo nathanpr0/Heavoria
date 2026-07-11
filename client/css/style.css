@@ -1605,6 +1605,45 @@ body {
 .btn-action-complete:hover {
   background: #27ae60;
 }
+.btn-action-reject {
+  background: #e74c3c;
+  color: #ffffff;
+}
+.btn-action-reject:hover {
+  background: #c0392b;
+}
+
+.order-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+.status-counter {
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.18);
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.status-counter span {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.status-counter strong {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-gold);
+  color: #140c06;
+}
 
 /* CRUD Tables */
 .table-responsive {
@@ -1741,6 +1780,9 @@ body {
   .order-row-actions {
     width: 100%;
     justify-content: space-between;
+  }
+  .order-status-grid {
+    grid-template-columns: 1fr 1fr;
   }
 }
 

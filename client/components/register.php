@@ -1,13 +1,8 @@
-<!-- 3. REGISTER (SIGN IN) SCREEN -->
+<!-- 3.0 REGISTER (SIGN IN) SCREEN -->
 <section id="register-screen" class="screen-view">
-  <!-- Background Layer -->
-  <div class="app-background"></div>
-  <div class="app-overlay"></div>
-  <!-- Background Layer -->
-
   <div class="logo-container">
     <div class="circular-logo">
-      <img src="assets/heavoria_logo.png" alt="Heavoria Logo" onerror="this.src='https://placehold.co/100x100/422/fd3?text=H'">
+      <img src="assets/heavoria_logorev.jpeg" alt="Heavoria Logo" onerror="this.src='https://placehold.co/100x100/422/fd3?text=H'">
     </div>
   </div>
 
@@ -21,12 +16,15 @@
   </div>
 
   <div class="auth-box register-box">
-    <form id="form-register"  autocomplete="off">
+    <form id="form-register" autocomplete="off">
       <div class="input-group">
         <input type="text" id="reg-username" placeholder="Username" required>
       </div>
       <div class="input-group">
         <input type="tel" id="reg-phone" placeholder="Phone Number" required>
+      </div>
+      <div class="input-group">
+        <input type="email" id="reg-email" placeholder="Gmail Address" required>
       </div>
       <div class="input-group password-group">
         <input type="password" id="reg-password" placeholder="Enter Password" required>
@@ -48,7 +46,7 @@
       </div>
       
       <div class="error-message" id="reg-error">
-        Error! The passwords do not match
+        Error! The passwords do not match.
       </div>
 
       <button type="submit" class="btn btn-translucent btn-auth">Sign In!</button>
@@ -63,7 +61,7 @@
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="19" y1="12" x2="5" y2="12"></line>
         <polyline points="12 19 5 12 12 5"></polyline>
-      </svg> Kembali
+      </svg> Kembali ke Lobby
     </button>
   </div>
 </section>
