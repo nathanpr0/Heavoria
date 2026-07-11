@@ -12,20 +12,13 @@
 </head>
 <body class="customer-body-bg">
 
-  <!-- Background Layer -->
-  <div class="app-background"></div>
-  <div class="app-overlay"></div>
-
-  <!-- Gold Frame Border -->
-  <div class="gold-frame"></div>
-
   <!-- MAIN CONTAINER (SPA Customer) -->
   <div id="app-container">
     <?php
     // Include SPA Customer screens / sections
     include 'components/welcome.php';
-    include 'components/login.php';
-    include 'components/register.php';
+    include 'components/login.php'; 
+    include 'components/register.php'; 
     include 'components/customer_dashboard.php';
     
     // Include customer modals

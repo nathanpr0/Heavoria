@@ -12,13 +12,6 @@
 </head>
 <body class="admin-body-bg">
 
-  <!-- Background Layer -->
-  <div class="app-background"></div>
-  <div class="app-overlay"></div>
-
-  <!-- Gold Frame Border -->
-  <div class="gold-frame"></div>
-
   <!-- MAIN CONTAINER (SPA Admin) -->
   <div id="app-container">
     <?php
