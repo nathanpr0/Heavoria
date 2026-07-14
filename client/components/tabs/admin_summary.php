@@ -1,5 +1,5 @@
 <!-- ADMIN SUMMARY TAB -->
-<div id="tab-admin-summary" class="tab-pane active">
+<div id="tab-admin-summary" class="tab-pane">
   <div class="admin-stats-grid">
     <div class="stat-card">
       <div class="stat-icon icon-revenue">

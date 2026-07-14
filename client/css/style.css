@@ -560,6 +560,174 @@ body {
   margin: 0 auto;
 }
 
+/* Admin landing menu */
+.dashboard-view:has(.admin-menu-home) {
+  background:
+    radial-gradient(circle at center, rgba(130, 82, 36, 0.16), transparent 55%),
+    #100b08;
+}
+.dashboard-view:has(.admin-menu-home) .dashboard-header {
+  justify-content: center;
+  min-height: 78px;
+  border-bottom: 2px solid rgba(227, 145, 45, 0.78);
+}
+.dashboard-view:has(.admin-menu-home) .header-actions {
+  position: absolute;
+  right: 36px;
+}
+.dashboard-view:has(.admin-menu-home) .header-brand {
+  text-align: center;
+}
+.dashboard-view:has(.admin-menu-home) .brand-text {
+  font-size: 1.55rem;
+}
+.dashboard-body:has(.admin-menu-home) {
+  max-width: 1600px;
+  padding: 34px 55px 52px;
+}
+.admin-menu-home {
+  border: 2px solid rgba(227, 145, 45, 0.86);
+  border-radius: 5px;
+  padding: 22px;
+  min-height: calc(100vh - 164px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.admin-welcome {
+  text-align: center;
+  border: 1px solid rgba(227, 145, 45, 0.8);
+  border-radius: 15px;
+  padding: 26px 20px;
+  margin-bottom: 28px;
+  background: rgba(0, 0, 0, 0.22);
+}
+.admin-welcome-kicker {
+  color: var(--color-text-light);
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+.admin-welcome h2 {
+  font-family: var(--font-serif);
+  color: var(--color-primary-gold);
+  font-size: clamp(2.4rem, 5vw, 4.25rem);
+  line-height: 1.05;
+  letter-spacing: 2px;
+}
+.admin-welcome p:last-child { color: var(--color-text-muted); margin-top: 8px; }
+.admin-menu-title {
+  font-family: var(--font-serif);
+  color: var(--color-light-gold);
+  font-size: 1.75rem;
+  margin: 0 0 14px;
+}
+.admin-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  border: 1px solid rgba(227, 145, 45, 0.65);
+  border-radius: 8px;
+  padding: 14px;
+}
+.admin-menu-card.nav-item {
+  min-height: 280px;
+  width: 100%;
+  border: 2px solid rgba(227, 145, 45, 0.8);
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(56, 38, 27, 0.86), rgba(15, 10, 7, 0.94));
+  color: var(--color-light-gold);
+  font-family: var(--font-serif);
+  font-size: clamp(1.15rem, 1.7vw, 1.65rem);
+  font-weight: 800;
+  line-height: 1.08;
+  text-transform: uppercase;
+  padding: 24px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.admin-menu-card.nav-item:hover,
+.admin-menu-card.nav-item:focus-visible {
+  color: #fff9e9;
+  background: linear-gradient(145deg, rgba(135, 82, 31, 0.65), rgba(28, 16, 8, 0.98));
+  border-color: #f5bc62;
+  box-shadow: 0 0 0 3px rgba(227, 145, 45, 0.16), 0 12px 24px rgba(0, 0, 0, 0.36);
+  transform: translateY(-5px);
+}
+.admin-content-panel { display: none; }
+.admin-content-panel.active { display: block; }
+.btn-admin-menu-back {
+  border: 1px solid rgba(227, 145, 45, 0.8);
+  background: transparent;
+  color: var(--color-primary-gold);
+  padding: 9px 14px;
+  border-radius: 6px;
+  font: 700 0.85rem var(--font-sans);
+  cursor: pointer;
+  margin-bottom: 22px;
+}
+.btn-admin-menu-back:hover { background: rgba(227, 145, 45, 0.15); color: #fff; }
+.btn-print-report {
+  border: 1px solid var(--color-primary-gold);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-primary-gold);
+  padding: 10px 16px;
+  font: 700 0.85rem var(--font-sans);
+  cursor: pointer;
+}
+.btn-print-report:hover { background: var(--color-primary-gold); color: #1a0d05; }
+
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+
+  html, body { width: auto !important; height: auto !important; overflow: visible !important; }
+  .dashboard-header, .admin-menu-home, .btn-admin-menu-back, .btn-print-report, .toast-notification { display: none !important; }
+  #admin-dashboard, .dashboard-body, .admin-content-panel {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body, .dashboard-view, .dashboard-body { background: #fff !important; color: #111 !important; }
+  /* Tab laporan sudah aktif saat tombol Cetak Laporan ditekan. Jangan
+     menyembunyikan pane lain di sini karena Chrome dapat ikut menyembunyikan
+     konten tabel pada pratinjau cetak. */
+  #tab-admin-transactions.tab-pane.active { display: block !important; }
+  .table-responsive {
+    width: 100% !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  .admin-table {
+    width: 100% !important;
+    table-layout: fixed;
+    border-collapse: collapse;
+    color: #111;
+    font-size: 9pt;
+  }
+  .admin-table th, .admin-table td {
+    padding: 5px 6px !important;
+    border: 1px solid #cfcfcf !important;
+    overflow-wrap: anywhere;
+    vertical-align: top;
+  }
+  .admin-table th { background: #f3f3f3 !important; color: #111 !important; }
+  .admin-table th:nth-child(1), .admin-table td:nth-child(1) { width: 14%; }
+  .admin-table th:nth-child(2), .admin-table td:nth-child(2) { width: 14%; }
+  .admin-table th:nth-child(3), .admin-table td:nth-child(3) { width: 13%; }
+  .admin-table th:nth-child(4), .admin-table td:nth-child(4) { width: 29%; }
+  .admin-table th:nth-child(5), .admin-table td:nth-child(5) { width: 14%; }
+  .admin-table th:nth-child(6), .admin-table td:nth-child(6) { width: 16%; }
+  .admin-table thead { display: table-header-group; }
+  .admin-table tr { break-inside: avoid; page-break-inside: avoid; }
+}
+
 /* 8. Customer Catalog Tab Styling */
 .tab-pane {
   display: none;
@@ -1727,6 +1895,7 @@ body {
 
 /* 16. Responsive Configurations */
 @media (max-width: 992px) {
+  .admin-menu-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .food-detail-layout {
     flex-direction: column;
   }
@@ -1746,6 +1915,13 @@ body {
 }
 
 @media (max-width: 768px) {
+  .dashboard-view:has(.admin-menu-home) .dashboard-header { min-height: auto; }
+  .dashboard-view:has(.admin-menu-home) .header-actions { position: static; }
+  .dashboard-body:has(.admin-menu-home) { padding: 18px; }
+  .admin-menu-home { padding: 14px; min-height: calc(100vh - 140px); }
+  .admin-menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 10px; }
+  .admin-menu-card.nav-item { min-height: 170px; font-size: 1.18rem; }
+  .admin-menu-card.nav-item:last-child { grid-column: span 2; }
   .welcome-footer {
     flex-direction: column;
     gap: 20px;
@@ -1780,6 +1956,12 @@ body {
   .order-status-grid {
     grid-template-columns: 1fr 1fr;
   }
+}
+
+@media (max-width: 440px) {
+  .admin-menu-grid { grid-template-columns: 1fr; }
+  .admin-menu-card.nav-item, .admin-menu-card.nav-item:last-child { grid-column: auto; min-height: 125px; }
+  .admin-welcome { padding: 20px 14px; }
 }
 
 /* ==================== NEW CUSTOM MOCKUP STYLING ==================== */

@@ -1,8 +1,11 @@
 <!-- ADMIN TRANSACTIONS TAB -->
 <div id="tab-admin-transactions" class="tab-pane">
-  <div class="section-header">
-    <h2>Riwayat Penjualan Lengkap</h2>
-    <p>Laporan transaksi pembayaran pelanggan yang telah diselesaikan.</p>
+  <div class="section-header flex-header">
+    <div>
+      <h2>Laporan Penjualan</h2>
+      <p>Riwayat transaksi pembayaran pelanggan yang telah diselesaikan.</p>
+    </div>
+    <button type="button" id="btn-print-sales-report" class="btn-print-report">Cetak Laporan</button>
   </div>
   <div class="table-responsive">
     <table class="admin-table">

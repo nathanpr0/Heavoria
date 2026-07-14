@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./css/style.css">
+  <link rel="stylesheet" href="./css/style.css?v=20260714-sales-print-fix">
 </head>
 <body class="admin-body-bg">
 
@@ -33,6 +33,6 @@
   </div>
 
   <!-- Javascript -->
-  <script src="js/app.js"></script>
+  <script src="js/app.js?v=20260714-sales-complete"></script>
 </body>
 </html>

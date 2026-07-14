@@ -36,7 +36,7 @@
       <div id="pickup-details-pane" class="pickup-details-pane active">
         <div class="pickup-info-card glass-card">
           <h4>📍 Lokasi Pengambilan:</h4>
-          <p>Universitas Dhyana Pura (UBD), Kampus Badung, Bali</p>
+          <p>Universitas Buddhi Dharma (UBD), Tangerang, Banten</p>
           <p class="text-gold" style="font-size: 0.8rem; margin-top: 5px;">* Bebas Ongkos Kirim (Rp 0)</p>
         </div>
       </div>

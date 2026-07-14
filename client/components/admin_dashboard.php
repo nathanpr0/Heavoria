@@ -2,20 +2,11 @@
 <section id="admin-dashboard" class="screen-view dashboard-view">
   <header class="dashboard-header">
     <div class="header-brand">
-      <div class="header-logo-circle logo-admin">A</div>
       <div>
-        <h1 class="brand-text text-gold">HEAVORIA ADMIN</h1>
-        <p class="brand-tagline">Management Portal</p>
+        <h1 class="brand-text text-gold">◇ HEAVORIA ◇</h1>
+        <p class="brand-tagline">ADMIN MANAGEMENT PORTAL</p>
       </div>
     </div>
-
-    <nav class="admin-nav">
-      <button class="nav-item active" data-tab="admin-summary">Ringkasan</button>
-      <button class="nav-item" data-tab="admin-orders">Verifikasi Pesanan</button>
-      <button class="nav-item" data-tab="admin-menu">Tambah/Hapus Produk</button>
-      <button class="nav-item" data-tab="admin-transactions">Laporan Penjualan</button>
-      <button class="nav-item" data-tab="admin-clients">List Client</button>
-    </nav>
 
     <div class="header-actions">
       <div class="user-info">
@@ -33,12 +24,33 @@
   </header>
 
   <main class="dashboard-body">
-    <?php
-    include 'components/tabs/admin_summary.php';
-    include 'components/tabs/admin_orders.php';
-    include 'components/tabs/admin_menu.php';
-    include 'components/tabs/admin_transactions.php';
-    include 'components/tabs/admin_clients.php';
-    ?>
+    <section id="admin-menu-home" class="admin-menu-home" aria-labelledby="admin-menu-title">
+      <div class="admin-welcome">
+        <p class="admin-welcome-kicker">WELCOME TO</p>
+        <h2>HEAVORIA</h2>
+        <p>Selamat datang, Administrator</p>
+      </div>
+
+      <h3 id="admin-menu-title" class="admin-menu-title">ADMIN MENU</h3>
+      <nav class="admin-menu-grid admin-nav" aria-label="Menu admin">
+        <button type="button" class="nav-item admin-menu-card" data-tab="admin-orders">Verifikasi<br>Pesanan<br>Client</button>
+        <button type="button" class="nav-item admin-menu-card" data-tab="admin-menu">Tambah/Hapus<br>Stok<br>Produk</button>
+        <button type="button" class="nav-item admin-menu-card" data-tab="admin-confirmed-orders">Lihat<br>List<br>Pesanan</button>
+        <button type="button" class="nav-item admin-menu-card" data-tab="admin-transactions">Cetak Laporan<br>Penjualan</button>
+        <button type="button" class="nav-item admin-menu-card" data-tab="admin-clients">Lihat<br>List<br>Client</button>
+      </nav>
+    </section>
+
+    <section id="admin-content-panel" class="admin-content-panel" aria-live="polite">
+      <button type="button" id="btn-admin-menu-back" class="btn-admin-menu-back">← Kembali ke menu admin</button>
+      <?php
+      include 'tabs/admin_summary.php';
+      include 'tabs/admin_orders.php';
+      include 'tabs/admin_confirmed_orders.php';
+      include 'tabs/admin_menu.php';
+      include 'tabs/admin_transactions.php';
+      include 'tabs/admin_clients.php';
+      ?>
+    </section>
   </main>
 </section>

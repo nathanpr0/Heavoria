@@ -28,10 +28,14 @@ let checkoutFulfillment = {
   deliveryFee: 0
 };
 
+// Keep every API request inside the same portal session (admin or customer).
+const currentPortal = document.getElementById("admin-login-screen") ? "admin" : "user";
+const apiUrl = (path) => `${path}${path.includes("?") ? "&" : "?"}portal=${currentPortal}`;
+
 // API HELPER FUNCTIONS
 const fetchMenu = async () => {
   try {
-    const res = await fetch('../server/menu.php?action=get');
+    const res = await fetch(apiUrl('../server/menu.php?action=get'));
     globalMenu = await res.json();
   } catch (err) {
     console.error("Failed to load menu", err);
@@ -40,7 +44,7 @@ const fetchMenu = async () => {
 
 const fetchOrders = async () => {
   try {
-    const res = await fetch('../server/orders.php?action=get');
+    const res = await fetch(apiUrl('../server/orders.php?action=get'));
     globalOrders = await res.json();
   } catch (err) {
     console.error("Failed to load orders", err);
@@ -49,7 +53,7 @@ const fetchOrders = async () => {
 
 const fetchTransactions = async () => {
   try {
-    const res = await fetch('../server/orders.php?action=get_all');
+    const res = await fetch(apiUrl('../server/orders.php?action=get_all'));
     globalTransactions = await res.json();
   } catch (err) {
     console.error("Failed to load transaction log", err);
@@ -58,7 +62,7 @@ const fetchTransactions = async () => {
 
 const fetchClients = async () => {
   try {
-    const res = await fetch('../server/auth.php?action=clients');
+    const res = await fetch(apiUrl('../server/auth.php?action=clients'));
     const data = await res.json();
     globalClients = data.success ? data.clients : [];
   } catch (err) {
@@ -69,7 +73,7 @@ const fetchClients = async () => {
 
 const checkSession = async () => {
   try {
-    const res = await fetch('../server/auth.php?action=session');
+    const res = await fetch(apiUrl('../server/auth.php?action=session'));
     const data = await res.json();
     if (data.success) {
       currentUser = data.user;
@@ -149,6 +153,7 @@ const navigateTo = async (screenId) => {
     await fetchClients();
     await updateAdminStats();
     renderAdminOrders();
+    renderConfirmedOrders();
     renderAdminMenuTable();
     renderAdminTransactions();
     renderAdminClients();
@@ -157,12 +162,13 @@ const navigateTo = async (screenId) => {
 
 // 4. AUTHENTICATION CONTROLLER
 const handleLogin = async (username, password) => {
-  const errorEl = document.getElementById("login-error");
-  const pwdInput = document.getElementById("login-password");
+  // The same authentication function is used by index.php and admin.php.
+  const errorEl = document.getElementById("login-error") || document.getElementById("admin-login-error");
+  const pwdInput = document.getElementById("login-password") || document.getElementById("admin-login-password");
   resetLoginNoticeStyle();
 
   try {
-    const res = await fetch('../server/auth.php?action=login', {
+    const res = await fetch(apiUrl('../server/auth.php?action=login'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -170,15 +176,20 @@ const handleLogin = async (username, password) => {
     const data = await res.json();
 
     if (data.success) {
-      errorEl.style.display = "none";
-      pwdInput.classList.remove("input-error-field");
+      if (errorEl) errorEl.style.display = "none";
+      if (pwdInput) pwdInput.classList.remove("input-error-field");
       currentUser = data.user;
       
-      // Redirect based on role
       if (currentUser.role === "admin") {
-        navigateTo("admin-dashboard");
+        // Admin may log in from the customer app; send that session to admin.php.
+        if (document.getElementById("admin-dashboard")) {
+          await navigateTo("admin-dashboard");
       } else {
-        navigateTo("customer-dashboard");
+          window.location.href = "admin.php";
+          return;
+        }
+      } else {
+        await navigateTo("customer-dashboard");
         if (pendingCartItem) {
           const itemToAdd = pendingCartItem;
           pendingCartItem = null;
@@ -195,17 +206,20 @@ const handleLogin = async (username, password) => {
           }, 100);
         }
       }
-      document.getElementById("form-login").reset();
-    } else {
-      // Show incorrect error state matching mockup
+
+      const loginForm = document.getElementById("form-login");
+      if (loginForm) loginForm.reset();
+    } else if (errorEl) {
       errorEl.innerText = data.message || "Error! incorrect password or username.";
       errorEl.style.display = "block";
-      pwdInput.classList.add("input-error-field");
+      if (pwdInput) pwdInput.classList.add("input-error-field");
     }
   } catch (err) {
     console.error("Login failure", err);
+    if (errorEl) {
     errorEl.innerText = "Error! Gagal berkomunikasi dengan server.";
     errorEl.style.display = "block";
+  }
   }
 };
 
@@ -263,7 +277,7 @@ const completeRegisterAfterOtp = async () => {
   codeInput.classList.remove("input-error-field");
 
   try {
-    const res = await fetch('../server/auth.php?action=register', {
+    const res = await fetch(apiUrl('../server/auth.php?action=register'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(pendingRegisterData)
@@ -293,15 +307,22 @@ const completeRegisterAfterOtp = async () => {
 };
 const handleLogout = async () => {
   try {
-    await fetch('../server/auth.php?action=logout');
+    await fetch(apiUrl('../server/auth.php?action=logout'));
   } catch (err) {
     console.error("Logout failure", err);
   }
+
   currentUser = null;
   activeCart = [];
   pendingCartItem = null;
+
+  if (document.getElementById("admin-login-screen")) {
+    await navigateTo("admin-login-screen");
+    return;
+  }
+
   updateCartBadge();
-  navigateTo("customer-dashboard");
+  await navigateTo("customer-dashboard");
 };
 
 const requestForgotPasswordOtp = async (email) => {
@@ -316,7 +337,7 @@ const requestForgotPasswordOtp = async (email) => {
   }
 
   try {
-    const res = await fetch('../server/auth.php?action=check_gmail', {
+    const res = await fetch(apiUrl('../server/auth.php?action=check_gmail'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
@@ -373,7 +394,7 @@ const resetPasswordByGmail = async (newPassword, confirmPassword) => {
   }
 
   try {
-    const res = await fetch('../server/auth.php?action=reset_password', {
+    const res = await fetch(apiUrl('../server/auth.php?action=reset_password'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: pendingForgotGmail, newPassword, confirmPassword })
@@ -655,7 +676,7 @@ const processPayment = async () => {
   const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
 
   try {
-    const res = await fetch('../server/orders.php?action=checkout', {
+    const res = await fetch(apiUrl('../server/orders.php?action=checkout'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -817,7 +838,7 @@ let adminStats = null;
 
 const updateAdminStats = async () => {
   try {
-    const res = await fetch('../server/stats.php');
+    const res = await fetch(apiUrl('../server/stats.php'));
     const data = await res.json();
     if (data.success) {
       adminStats = data.stats;
@@ -859,21 +880,16 @@ const renderAdminCategoryChart = (categoryTotals) => {
   });
 };
 
-let activeAdminStatusFilter = "all";
-
-const renderAdminOrders = () => {
-  const container = document.getElementById("admin-orders-container");
+const renderOrderQueue = (containerId, statuses, emptyMessage) => {
+  const container = document.getElementById(containerId);
+  if (!container) return;
   container.innerHTML = "";
 
-  const orders = getOrders();
-  
-  const filteredOrders = orders.filter(o => {
-    if (activeAdminStatusFilter === "all") return o.status !== "Selesai" && o.status !== "Ditolak";
-    return o.status === activeAdminStatusFilter;
-  });
+  const allowedStatuses = Array.isArray(statuses) ? statuses : [statuses];
+  const filteredOrders = getOrders().filter(order => allowedStatuses.includes(order.status));
 
   if (filteredOrders.length === 0) {
-    container.innerHTML = `<div class="cart-empty-text" style="font-size: 1.1rem; padding: 40px;">Tidak ada antrean pesanan aktif saat ini.</div>`;
+    container.innerHTML = `<div class="cart-empty-text" style="font-size: 1.1rem; padding: 40px;">${emptyMessage}</div>`;
     return;
   }
 
@@ -884,7 +900,7 @@ const renderAdminOrders = () => {
     let actionBtnHtml = "";
     if (order.status === "Menunggu Verifikasi") {
       actionBtnHtml = `
-        <button class="btn-action-status btn-action-cook" data-id="${order.id}" data-next-status="Dikonfirmasi">Confirm</button>
+        <button class="btn-action-status btn-action-cook" data-id="${order.id}" data-next-status="Dikonfirmasi">Terima Pesanan</button>
         <button class="btn-action-status btn-action-reject" data-id="${order.id}" data-next-status="Ditolak">Tolak</button>
       `;
     } else if (order.status === "Dikonfirmasi") {
@@ -928,9 +944,21 @@ const renderAdminOrders = () => {
   });
 };
 
+const renderAdminOrders = () => renderOrderQueue(
+  "admin-orders-container",
+  "Menunggu Verifikasi",
+  "Tidak ada pesanan yang menunggu verifikasi."
+);
+
+const renderConfirmedOrders = () => renderOrderQueue(
+  "admin-confirmed-orders-container",
+  ["Dikonfirmasi", "Siap Diambil"],
+  "Belum ada pesanan yang telah dikonfirmasi."
+);
+
 const updateOrderStatus = async (orderId, status = "", reason = "") => {
   try {
-    const res = await fetch('../server/orders.php?action=update_status', {
+    const res = await fetch(apiUrl('../server/orders.php?action=update_status'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: orderId, status, reason })
@@ -942,6 +970,7 @@ const updateOrderStatus = async (orderId, status = "", reason = "") => {
       await fetchTransactions();
       await updateAdminStats();
       renderAdminOrders();
+      renderConfirmedOrders();
       renderAdminTransactions();
       renderAdminClients();
     } else {
@@ -1014,7 +1043,7 @@ const openMenuCrudModal = (item = null) => {
 
 const saveMenuItem = async (formData) => {
   try {
-    const res = await fetch('../server/menu.php?action=save', {
+    const res = await fetch(apiUrl('../server/menu.php?action=save'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData)
@@ -1036,7 +1065,7 @@ const saveMenuItem = async (formData) => {
 
 const deleteMenuItem = async (itemId) => {
   try {
-    const res = await fetch('../server/menu.php?action=delete', {
+    const res = await fetch(apiUrl('../server/menu.php?action=delete'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: itemId })
@@ -1060,7 +1089,8 @@ const renderAdminTransactions = () => {
   const tbody = document.getElementById("admin-transactions-table-body");
   tbody.innerHTML = "";
 
-  const completed = globalTransactions;
+  // Laporan penjualan hanya mencatat pesanan yang benar-benar telah di-Complete admin.
+  const completed = globalTransactions.filter(order => order.status === "Selesai");
 
   if (completed.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" class="cart-empty-text" style="text-align:center;">Belum ada riwayat transaksi selesai.</td></tr>`;
@@ -1117,7 +1147,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   const isAdminApp = !!document.getElementById("admin-login-screen") && !document.getElementById("login-screen");
 
   if (currentUser && currentUser.role === "admin") {
-    navigateTo("admin-dashboard");
+    if (isAdminApp) {
+      await navigateTo("admin-dashboard");
+    } else {
+      // index.php does not contain the admin dashboard. Keep an admin session
+      // in the dedicated portal instead of hiding every customer screen.
+      window.location.href = "admin.php";
+      return;
+    }
   } else if (isAdminApp) {
     navigateTo("admin-login-screen");
   } else {
@@ -1155,17 +1192,33 @@ document.addEventListener("DOMContentLoaded", async () => {
         const tabId = item.getAttribute("data-tab");
         document.querySelectorAll("#admin-dashboard .tab-pane").forEach(pane => pane.classList.remove("active"));
         document.getElementById("tab-" + tabId).classList.add("active");
+
+        const adminMenuHome = document.getElementById("admin-menu-home");
+        const adminContentPanel = document.getElementById("admin-content-panel");
+        if (adminMenuHome && adminContentPanel) {
+          adminMenuHome.style.display = "none";
+          adminContentPanel.classList.add("active");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
       });
     });
 
-    document.querySelectorAll(".status-filter-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".status-filter-btn").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        activeAdminStatusFilter = btn.getAttribute("data-status-filter");
-        renderAdminOrders();
+    const adminMenuBackButton = document.getElementById("btn-admin-menu-back");
+    if (adminMenuBackButton) {
+      adminMenuBackButton.addEventListener("click", () => {
+        const adminMenuHome = document.getElementById("admin-menu-home");
+        const adminContentPanel = document.getElementById("admin-content-panel");
+        adminContentPanel.classList.remove("active");
+        adminMenuHome.style.display = "flex";
+        document.querySelectorAll(".admin-nav .nav-item").forEach(nav => nav.classList.remove("active"));
+        window.scrollTo({ top: 0, behavior: "smooth" });
       });
-    });
+    }
+
+    const printSalesReportButton = document.getElementById("btn-print-sales-report");
+    if (printSalesReportButton) {
+      printSalesReportButton.addEventListener("click", () => window.print());
+    }
 
     document.getElementById("btn-add-menu-modal").addEventListener("click", () => openMenuCrudModal());
     document.getElementById("btn-close-menu-crud").addEventListener("click", () => document.getElementById("menu-crud-modal").classList.remove("active"));
@@ -1180,6 +1233,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         desc: document.getElementById("crud-item-desc").value,
         image: document.getElementById("crud-item-image").value
       });
+    });
+
+    document.querySelectorAll(".btn-logout").forEach(btn => {
+      btn.addEventListener("click", handleLogout);
     });
 
     return;
@@ -1315,7 +1372,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     navigateTo("login-screen");
   });
   const adminForm = document.getElementById("form-admin-login");
-  if (adminForm) {
+  if (adminForm && !isAdminApp) {
     const adminIdentifier = document.getElementById("admin-login-identifier");
     const adminPassword = document.getElementById("admin-login-password");
     const adminError = document.getElementById("admin-login-error");
@@ -1533,18 +1590,28 @@ document.addEventListener("DOMContentLoaded", async () => {
       const tabId = item.getAttribute("data-tab");
       document.querySelectorAll("#admin-dashboard .tab-pane").forEach(pane => pane.classList.remove("active"));
       document.getElementById("tab-" + tabId).classList.add("active");
+
+      const adminMenuHome = document.getElementById("admin-menu-home");
+      const adminContentPanel = document.getElementById("admin-content-panel");
+      if (adminMenuHome && adminContentPanel) {
+        adminMenuHome.style.display = "none";
+        adminContentPanel.classList.add("active");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     });
   });
 
-  // Admin Order filters
-  document.querySelectorAll(".status-filter-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".status-filter-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      activeAdminStatusFilter = btn.getAttribute("data-status-filter");
-      renderAdminOrders();
+  const adminMenuBackButton = document.getElementById("btn-admin-menu-back");
+  if (adminMenuBackButton) {
+    adminMenuBackButton.addEventListener("click", () => {
+      const adminMenuHome = document.getElementById("admin-menu-home");
+      const adminContentPanel = document.getElementById("admin-content-panel");
+      adminContentPanel.classList.remove("active");
+      adminMenuHome.style.display = "flex";
+      document.querySelectorAll(".admin-nav .nav-item").forEach(nav => nav.classList.remove("active"));
+      window.scrollTo({ top: 0, behavior: "smooth" });
     });
-  });
+  }
 
   if (document.getElementById("btn-add-menu-modal")) {
     // Admin CRUD Modal Trigger
