@@ -33,6 +33,7 @@
 
       <h3 id="admin-menu-title" class="admin-menu-title">ADMIN MENU</h3>
       <nav class="admin-menu-grid admin-nav" aria-label="Menu admin">
+        <button type="button" class="nav-item admin-menu-card" data-tab="admin-summary">Statistik<br>Penjualan</button>
         <button type="button" class="nav-item admin-menu-card" data-tab="admin-orders">Verifikasi<br>Pesanan<br>Client</button>
         <button type="button" class="nav-item admin-menu-card" data-tab="admin-menu">Tambah/Hapus<br>Stok<br>Produk</button>
         <button type="button" class="nav-item admin-menu-card" data-tab="admin-confirmed-orders">Lihat<br>List<br>Pesanan</button>

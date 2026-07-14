@@ -1,5 +1,9 @@
 <!-- 2.0 ADMIN LOGIN SCREEN -->
 <section id="admin-login-screen" class="screen-view active">
+  <!-- Background Layer -->
+  <div class="app-background"></div>
+  <div class="app-overlay"></div>
+
   <div class="logo-container">
     <div class="circular-logo logo-gold-border">
       <img src="assets/heavoria_logorev.jpeg" alt="Heavoria Logo" onerror="this.src='https://placehold.co/100x100/222/d4af37?text=H'">
