@@ -31,37 +31,34 @@
   padding: 0;
 }
 
+html,
 body {
   font-family: var(--font-sans);
   background-color: var(--color-bg-dark);
   color: var(--color-text-light);
   overflow-x: hidden;
   min-height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 
 /* 2. Visual Layer System (Background & Borders) */
 .app-background {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  position: absolute;
+  inset: 0;
   background-image: url('../assets/heavoria_bg.png');
   background-size: cover;
   background-position: center;
   filter: brightness(0.6) contrast(1.1);
   z-index: -2;
-  transition: filter 0.5s ease;
-
 }
 
 .app-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: radial-gradient(circle, rgba(20,12,6,0.5) 0%, rgba(10,5,2,0.9) 100%);
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle,
+      rgba(20,12,6,0.5),
+      rgba(10,5,2,0.9));
   z-index: -1;
 }
 
@@ -128,20 +125,19 @@ body {
 
 /* 4. SPA Layout - Screen Views */
 #app-container {
-    min-height: 100vh;
+    min-height: calc(100vh - 30px);
     position: relative;
-    /* Tambahkan box-sizing agar border tidak error */
     box-sizing: border-box;
-    /* Pastikan z-index lebih tinggi dari background */
-    z-index: 1; 
+    z-index: 1;
     border: 1.5px solid var(--color-primary-gold);
     margin: 15px;
+    overflow: hidden;
 }
 
 .screen-view {
   display: none;
   width: 100%;
-  min-height: 100vh;
+  min-height: calc(100vh - 30px); /* 100vh - margin atas 15px - margin bawah 15px = 100vh - 30px */
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -2123,3 +2119,35 @@ body {
   }
 }
 
+/* Toast Notification */
+.toast-notification {
+    position: fixed;
+    right: 30px;
+    bottom: 30px;
+
+    background: rgba(20, 12, 6, 0.95);
+    border: 1px solid var(--color-primary-gold);
+    border-radius: 12px;
+
+    padding: 15px 25px;
+
+    color: white;
+
+    z-index: 99999;
+
+    display: none;
+}
+
+.toast-notification.show {
+    display: block;
+}
+
+.toast-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.toast-icon {
+    color: var(--color-primary-gold);
+}

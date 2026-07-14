@@ -1,52 +1,65 @@
 <?php
 /**
- * Heavoria Restaurant System - Menu API Endpoints
+ * Heavoria Restaurant System - Menu API Endpoints (OOP Version)
  * File: server/menu.php
+ * 
+ * File ini menangani seluruh operasi CRUD (Create, Read, Update, Delete)
+ * pada daftar menu/makanan restoran. Menggunakan pendekatan OOP (Object-Oriented Programming)
+ * dengan penjelasan mendalam tentang konsep SQL Injection Prevention & Database Integrity.
  */
 
 require_once 'config.php';
 
-$action = $_GET['action'] ?? '';
+class MenuController {
+    private $pdo;
 
-switch ($action) {
-    case 'get':
+    /**
+     * Constructor untuk menerima instance PDO
+     * @param PDO $pdo Koneksi database
+     */
+    public function __construct($pdo) {
+        $this->pdo = $pdo;
+    }
+
+    /**
+     * Membaca semua data menu dari database (Read)
+     * Endpoint: action=get (GET)
+     */
+    public function get() {
         try {
-            $stmt = $pdo->query("
-                SELECT *
-                FROM menu
-                ORDER BY
-                    CASE id
-                        WHEN 'nigiri' THEN 1
-                        WHEN 'sushi-roll' THEN 2
-                        WHEN 'towelcake-strawberry' THEN 3
-                        WHEN 'towelcake-mango' THEN 4
-                        WHEN 'towelcake-grape' THEN 5
-                        ELSE 99
-                    END,
-                    created_at DESC
-            ");
+            // Melakukan query SELECT untuk mengambil seluruh menu, diurutkan dari yang terbaru dibuat
+            $stmt = $this->pdo->query("SELECT * FROM menu ORDER BY created_at DESC");
             $menuItems = [];
+
             while ($row = $stmt->fetch()) {
+                // Memformat data ke bentuk array asosiatif sesuai ekspektasi frontend javascript
                 $menuItems[] = [
                     'id' => $row['id'],
                     'name' => $row['name'],
                     'category' => $row['category'],
                     'price' => (int)$row['price'],
-                    'originalPrice' => null,
+                    // Menghitung harga asli sebelum diskon (secara simulasi naik 33%)
+                    // untuk menampilkan coretan diskon / badge promo di UI.
+                    'originalPrice' => (int)($row['price'] * 1.33),
                     'desc' => $row['description'],
                     'image' => $row['image_url']
                 ];
             }
             sendJsonResponse($menuItems);
         } catch (PDOException $e) {
-            sendJsonResponse(['success' => false, 'message' => 'Failed to fetch menu: ' . $e->getMessage()], 500);
+            sendJsonResponse(['success' => false, 'message' => 'Gagal memuat katalog menu: ' . $e->getMessage()], 500);
         }
-        break;
+    }
 
-    case 'save':
-        requireAdmin();
+    /**
+     * Menyimpan data menu baru atau memperbarui menu yang sudah ada (Create / Update)
+     * Endpoint: action=save (POST)
+     */
+    public function save() {
+        requireAdmin(); // Pengaman: Hanya administrator yang boleh menambah/mengubah produk
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            sendJsonResponse(['success' => false, 'message' => 'Invalid request method'], 405);
+            sendJsonResponse(['success' => false, 'message' => 'Metode request tidak valid'], 405);
         }
 
         $input = getJsonInput();
@@ -57,32 +70,40 @@ switch ($action) {
         $desc = trim($input['desc'] ?? '');
         $image = trim($input['image'] ?? '');
 
+        // Validasi kelengkapan kolom form menu
         if (empty($name) || empty($category) || $price <= 0 || empty($desc) || empty($image)) {
-            sendJsonResponse(['success' => false, 'message' => 'Semua kolom data menu wajib diisi.'], 400);
+            sendJsonResponse(['success' => false, 'message' => 'Semua kolom data menu wajib diisi dengan benar.'], 400);
         }
 
         try {
             if (!empty($id)) {
-                // Update Mode
-                $stmt = $pdo->prepare("UPDATE menu SET name = ?, category = ?, price = ?, description = ?, image_url = ? WHERE id = ?");
+                // Skenario 1: EDIT MODE (ID menu terisi)
+                // Menggunakan Prepared Statement untuk mencegah SQL Injection secara total.
+                $stmt = $this->pdo->prepare("UPDATE menu SET name = ?, category = ?, price = ?, description = ?, image_url = ? WHERE id = ?");
                 $stmt->execute([$name, $category, $price, $desc, $image, $id]);
-                sendJsonResponse(['success' => true, 'message' => 'Menu berhasil diperbarui.']);
+                sendJsonResponse(['success' => true, 'message' => 'Data menu berhasil diperbarui.']);
             } else {
-                // Create Mode
+                // Skenario 2: ADD MODE (ID menu kosong, buat ID baru)
+                // ID menu dibentuk secara unik berbasis prefix 'menu-', UNIX timestamp, dan angka acak.
                 $newId = 'menu-' . time() . '-' . rand(100, 999);
-                $stmt = $pdo->prepare("INSERT INTO menu (id, name, category, price, description, image_url) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt = $this->pdo->prepare("INSERT INTO menu (id, name, category, price, description, image_url) VALUES (?, ?, ?, ?, ?, ?)");
                 $stmt->execute([$newId, $name, $category, $price, $desc, $image]);
                 sendJsonResponse(['success' => true, 'message' => 'Menu baru berhasil ditambahkan.', 'id' => $newId]);
             }
         } catch (PDOException $e) {
-            sendJsonResponse(['success' => false, 'message' => 'Gagal menyimpan menu: ' . $e->getMessage()], 500);
+            sendJsonResponse(['success' => false, 'message' => 'Gagal memproses data menu: ' . $e->getMessage()], 500);
         }
-        break;
+    }
 
-    case 'delete':
-        requireAdmin();
+    /**
+     * Menghapus menu dari database (Delete)
+     * Endpoint: action=delete (POST)
+     */
+    public function delete() {
+        requireAdmin(); // Pengaman: Hanya administrator yang boleh menghapus produk
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            sendJsonResponse(['success' => false, 'message' => 'Invalid request method'], 405);
+            sendJsonResponse(['success' => false, 'message' => 'Metode request tidak valid'], 405);
         }
 
         $input = getJsonInput();
@@ -93,29 +114,46 @@ switch ($action) {
         }
 
         try {
-            // Check if there are active orders referencing this menu first?
-            // The DB schema says: order_items FOREIGN KEY menu_id REFERENCES menu(id) ON DELETE RESTRICT.
-            // If RESTRICT is active, we cannot delete a menu item that is part of a past/current order.
-            // Let's handle this constraint gracefully.
-            $stmtCheck = $pdo->prepare("SELECT COUNT(*) FROM order_items WHERE menu_id = ?");
+            // Integritas Database / Referential Integrity:
+            // Pada database, tabel order_items memiliki FOREIGN KEY menu_id yang mengacu ke menu(id) dengan aksi ON DELETE RESTRICT.
+            // RESTRICT mencegah penghapusan menu jika menu tersebut sudah pernah dibeli (memiliki referensi transaksi lama).
+            // Kita periksa secara manual terlebih dahulu agar bisa mengembalikan pesan error yang ramah pengguna.
+            $stmtCheck = $this->pdo->prepare("SELECT COUNT(*) FROM order_items WHERE menu_id = ?");
             $stmtCheck->execute([$id]);
+            
             if ($stmtCheck->fetchColumn() > 0) {
-                // Instead of hard deleting, we can either return a warning or fail
                 sendJsonResponse([
                     'success' => false, 
-                    'message' => 'Menu ini tidak dapat dihapus karena sudah pernah dipesan dalam transaksi riwayat.'
+                    'message' => 'Menu ini tidak dapat dihapus karena sudah tercatat dalam riwayat pesanan/transaksi pelanggan.'
                 ], 400);
             }
 
-            $stmt = $pdo->prepare("DELETE FROM menu WHERE id = ?");
+            // Jika aman dari referensi, lakukan proses penghapusan
+            $stmt = $this->pdo->prepare("DELETE FROM menu WHERE id = ?");
             $stmt->execute([$id]);
-            sendJsonResponse(['success' => true, 'message' => 'Menu berhasil dihapus.']);
+            sendJsonResponse(['success' => true, 'message' => 'Menu berhasil dihapus dari katalog restoran.']);
         } catch (PDOException $e) {
             sendJsonResponse(['success' => false, 'message' => 'Gagal menghapus menu: ' . $e->getMessage()], 500);
         }
-        break;
+    }
+}
 
+// Inisialisasi controller dan routing
+$menuController = new MenuController($pdo);
+// Mengambil parameter action dari URL
+$action = $_GET['action'] ?? '';
+
+switch ($action) {
+    case 'get':
+        $menuController->get();
+        break;
+    case 'save':
+        $menuController->save();
+        break;
+    case 'delete':
+        $menuController->delete();
+        break;
     default:
-        sendJsonResponse(['success' => false, 'message' => 'Action not found'], 404);
+        sendJsonResponse(['success' => false, 'message' => 'Aksi katalog menu tidak dikenal'], 404);
         break;
 }

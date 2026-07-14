@@ -20,6 +20,7 @@
     include 'components/login.php'; 
     include 'components/register.php'; 
     include 'components/customer_dashboard.php';
+    include 'components/admin_dashboard.php';
     
     // Include customer modals
     include 'components/modals/cart_drawer.php';

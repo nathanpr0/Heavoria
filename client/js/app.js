@@ -1574,3 +1574,34 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
 });
+
+// Toast Notification
+function showToast(message) {
+    const toast = document.getElementById("customer-toast-notif");
+
+    if (!toast) return;
+
+    document.getElementById("customer-toast-msg").innerText = message;
+
+    toast.classList.add("show");
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 3000);
+}
+
+function showAdminToast(message) {
+    const toast = document.getElementById("admin-toast-notif");
+
+    if (!toast) return;
+
+    document.getElementById("admin-toast-msg").innerText = message;
+
+    toast.classList.add("show");
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 3000);
+}
+
+showToast("Test Heavoria");

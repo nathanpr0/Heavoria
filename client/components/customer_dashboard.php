@@ -50,11 +50,11 @@
 
   <main class="dashboard-body-new">
     <?php
-    include 'tabs/catalog.php';
-    include 'tabs/testimony.php';
-    include 'tabs/contact.php';
-    include 'tabs/about.php';
-    include 'tabs/order_history.php';
+    include 'components/tabs/catalog.php';
+    include 'components/tabs/testimony.php';
+    include 'components/tabs/contact.php';
+    include 'components/tabs/about.php';
+    include 'components/tabs/order_history.php';
     ?>
   </main>
 </section>

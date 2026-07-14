@@ -34,11 +34,11 @@
 
   <main class="dashboard-body">
     <?php
-    include 'tabs/admin_summary.php';
-    include 'tabs/admin_orders.php';
-    include 'tabs/admin_menu.php';
-    include 'tabs/admin_transactions.php';
-    include 'tabs/admin_clients.php';
+    include 'components/tabs/admin_summary.php';
+    include 'components/tabs/admin_orders.php';
+    include 'components/tabs/admin_menu.php';
+    include 'components/tabs/admin_transactions.php';
+    include 'components/tabs/admin_clients.php';
     ?>
   </main>
 </section>
